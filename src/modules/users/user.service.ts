@@ -67,7 +67,6 @@ const verifyEmailService = async (otp: OTPInput) => {
     await user.save()
 
     await sendWelcomeEmail(user.firstName, user.email);
-
     return;
       
   } catch (error: any) {

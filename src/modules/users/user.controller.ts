@@ -1,12 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import {registerParentService, verifyEmailService } from "./user.service";
 import status_codes from "../../utils/status_constants";
-import { check_if_user_exist_with_email } from "../../utils/check_user_exists.utils";
+import { check_if_user_exist_with_email, check_if_user_exist_with_id } from "../../utils/check_user_exists.utils";
 import { User } from "./user.model";
 import comparePassword from "../../utils/compare_password";
 import { decode_token, encode_token } from "../../utils/token_management";
-import RequestWithUser from "../../models/RequestWithUSer";
-import { stat } from "node:fs/promises";
+import RequestWithUser from "../../models/RequestWithUSer"; 
+import { sendResetPasswordEmail } from "../../utils/email_sender.utils"; 
+const bcrypt = require("bcrypt");
 
 
 class UserController {
@@ -68,8 +69,6 @@ class UserController {
       if (response) {
         return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: response})
       }
-
-
 
       return res
       .status(status_codes.HTTP_200_OK)
@@ -268,7 +267,7 @@ class UserController {
   }  
 
   static async forgotPassword(req: Request, res: Response, next: NextFunction) {
-
+    try {
     if (!req.body) {
       return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
         status: 422,
@@ -280,13 +279,69 @@ class UserController {
     const user = await check_if_user_exist_with_email(email)
     if (!user) {
       return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, message: "User not found"})
+      }
+      
+      const resetToken = encode_token(user._id, "10m")
+      console.log(resetToken);
+      
+      const resetPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    sendResetPasswordEmail(user.firstName, user.email, resetPasswordLink)
+      
+      res.status(status_codes.HTTP_200_OK).json({ success: true, status: 200, message: "Password reset link sent to your email." })
+      
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+      });
     }
-
-    const resetToken = encode_token(user?._id, "10m");
-    
   }
-  static async resetPassword(req: Request, res: Response, next: NextFunction) {
 
+  static async resetPassword(req: Request, res: Response, next: NextFunction) { 
+    try {
+      if (!req.body) {
+        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+          status: 422,
+          success: false,
+          message: "Unprocessable request body",
+        });
+      }
+      const { token } = req.params
+      const { password } = req.body
+      const userId = decode_token(token);
+      if (!userId) {
+        res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+          status: 400,
+          success: false,
+          message: "link has expired or token not valid",
+        });
+      }
+      const user = await check_if_user_exist_with_id(userId);
+      if (!user) {
+        res
+          .status(status_codes?.HTTP_404_NOT_FOUND)
+          .json({ status: 404, message: "User not found" });
+      }
+ 
+
+      const salt = await bcrypt.genSalt(12); 
+      const userPassword = await bcrypt.hash(password, salt);
+
+      user.password = userPassword;
+
+      await user.save()
+      return res.status(status_codes.HTTP_200_OK).json({status: 200, success: true, message: "Password reset successful"})
+    } catch (error) {
+      console.error("Password reset error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
   }
 }
 

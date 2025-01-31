@@ -55,4 +55,28 @@ export const sendWelcomeEmail = async (name: string, email: string) => {
 }
 
 
+export const sendResetPasswordEmail = async (name: string, email: string, resetPasswordLink: string) => {
+ try {
+  const recipient = [{ email }]
+  const fileName = "reset_password_email_template.ejs"
+  const templatePath = path.join(__dirname, '..', 'templates', `${fileName}`)
+  const template = fs.readFileSync(templatePath, 'utf-8');
+  const html = ejs.render(template, { name, resetPasswordLink });  
+  
+  const response = await mailtrapClient
+      .send({
+        from: sender,
+        to: recipient,
+        subject: "Reset your Password",
+        html,
+        category: "Password Reset",
+      })
+    console.log("Reset password email sent successfully", response);
+ } catch (error) {
+  console.error(`Error sending reset password email`, error)
+  throw new Error(`Error sending reset password email: ${error}`)
+ }
+}
+
+
 

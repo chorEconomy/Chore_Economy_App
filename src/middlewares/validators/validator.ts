@@ -118,5 +118,21 @@ function validatePassword(password: string): string[] {
     return errors;
 }
 
+function validateUserRequestPassword(req: Request, res: Response, next: NextFunction) {
+    const errors: string[] = [];
+    const sanitizedData = { 
+        password: req.body.password?.trim() || "",
+    };
+    const passwordErrors = validatePassword(sanitizedData.password);
+    errors.push(...passwordErrors);
+    if (!errors.length) {
+        req.body = sanitizedData; // Use sanitized data instead of mutating `req.body`
+        next();
+    } else {
+        res.status(status_codes.HTTP_400_BAD_REQUEST).json({ status: 400, errors });
+    }
+}
 
-export {validateSignUpInputForParent, validateSignUpInputForAdmin, validateSignInInput, comparePassword}
+
+
+export {validateSignUpInputForParent, validateSignUpInputForAdmin, validateSignInInput, validateUserRequestPassword}
