@@ -18,6 +18,10 @@ export enum EStatus {
   Disabled = "disabled",
 }
 
+type Token =  {
+  [key: string]: any;
+}
+
 export interface IUser extends Document {
   firstName: string;
   lastName: string;
@@ -29,6 +33,7 @@ export interface IUser extends Document {
   photo: string;
   phoneNumber: string;
   role: ERole;
+  tokens: Token[];
   country: string;
   status: EStatus;
   verificationToken: string
@@ -54,7 +59,14 @@ const userSchema: Schema = new Schema<IUser>(
     lastLogin: {type: Date, default: Date.now},
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
     status: { type: String, enum: Object.values(EStatus), required: true, default: "inactive" as EStatus},
-    role: { type: String, enum: Object.values(ERole)},
+    role: { type: String, enum: Object.values(ERole) },
+    tokens: [
+      {
+        access_token: { type: String },
+        refresh_token: { type: String },
+        signedAt: { type: String },
+      }
+    ],
   },
   { timestamps: true } // Automatic management of `createdAt` and `updatedAt`
 );
@@ -66,7 +78,7 @@ userSchema.pre("save", async function (next) {
     return next();
   }
   try {
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(12); 
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error: any) {

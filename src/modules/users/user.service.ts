@@ -1,9 +1,8 @@
 import { check_if_user_exist_with_email } from "../../utils/check_user_exists.utils";
 import { Response } from "express";
 import generateOTP from "../../utils/otp.utils"; 
-import { OTPInput, RegisterInputForParent } from "./user.types";
+import { loginInput, OTPInput, RegisterInputForParent } from "./user.types";
 import { ERole, User, EGender, IUser } from "./user.model";
-import { generateTokenAndSetCookie } from "../../utils/generateTokenAndSetCookie";
 import { sendVerificationEmail, sendWelcomeEmail } from "../../utils/email_sender.utils";
 
 const registerParentService = async (
@@ -39,8 +38,7 @@ const registerParentService = async (
     });
 
     await newUser.save();
-
-    generateTokenAndSetCookie(res, newUser._id);
+ 
 
     await sendVerificationEmail(
         newUser.email,
@@ -76,5 +74,6 @@ const verifyEmailService = async (otp: OTPInput) => {
     throw new Error(error.message || "An error occurred during email verification");
   }
 }
+
 
 export { registerParentService, verifyEmailService};
