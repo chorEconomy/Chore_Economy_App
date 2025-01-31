@@ -7,6 +7,7 @@ import comparePassword from "../../utils/compare_password";
 import { decode_token, encode_token } from "../../utils/token_management";
 import RequestWithUser from "../../models/RequestWithUSer"; 
 import { sendResetPasswordEmail } from "../../utils/email_sender.utils"; 
+import generateAndSaveTokens from "../../utils/generate_and_save_tokens";
 const bcrypt = require("bcrypt");
 
 
@@ -31,6 +32,7 @@ class UserController {
       }
 
       const user = await registerParentService(req?.body, res); 
+
       return res.status(status_codes.HTTP_201_CREATED).json({
         status: 201,
         success: true,
@@ -52,36 +54,66 @@ class UserController {
 
   static async verifyEmail(req: Request, res: Response, next: NextFunction) {
     try {
-      if (!req.body) {
-        return res
-          .status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY)
-          .json({ status: 422, success: false, message: "unprocessible request body" });
-      }
+        if (!req.body) {
+            return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+                status: 422,
+                success: false,
+                message: "Unprocessable request body",
+            });
+        }
 
-      if (!req.body.otp) {
-        return res
-        .status(status_codes.HTTP_400_BAD_REQUEST)
-        .json({ status: 400, success: false, message: "OTP is required!" });
-      }
+        if (!req.body.otp) {
+            return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+                status: 400,
+                success: false,
+                message: "OTP is required!",
+            });
+        }
 
-      const response = await verifyEmailService(req?.body?.otp)
+        const response = await verifyEmailService(req?.body?.otp);
+        if (response) {
+            return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+                status: 400,
+                success: false,
+                message: response,
+            });
+        }
 
-      if (response) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: response})
-      }
+        // Retrieve the user based on the OTP verification
+        const user = await check_if_user_exist_with_email(req.body.email);
+        if (!user) {
+            return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+                status: 400,
+                success: false,
+                message: "User not found!",
+            });
+        }
 
-      return res
-      .status(status_codes.HTTP_200_OK)
-        .json({ status: 200, success: true, message: "Email verified successfully!"});
-      
+        // Mark the user as verified
+        user.isVerified = true;
+        await user.save();
+
+        // Use the helper function to generate and store tokens
+        const { access_token, refresh_token } = await generateAndSaveTokens(user);
+
+        return res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            message: "Email verified successfully! User logged in.",
+            access_token,
+            refresh_token,
+        });
+
     } catch (error: any) {
-      return res.json({
-        status: status_codes.HTTP_500_INTERNAL_SERVER_ERROR,
-        success: false,
-        message: error?.message,
-      });
+        console.error('Verify Email error:', error);
+        return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+            status: 500,
+            success: false,
+            message: error?.message,
+        });
     }
-  }
+}
+
   
   static async logout(req: RequestWithUser, res: Response, next: NextFunction) {
     try {
@@ -129,84 +161,53 @@ class UserController {
     }
 }
 
-  static async login(req: Request, res: Response, next: NextFunction) {
-    try {
+static async login(req: Request, res: Response, next: NextFunction) {
+  try {
       if (!req.body) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
-          success: false,
-          message: "Unprocessable request body",
-        });
+          return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+              status: 422,
+              success: false,
+              message: "Unprocessable request body",
+          });
       }
-  
+
       const user = await check_if_user_exist_with_email(req.body.email);
       if (!user) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
-          success: false,
-          message: "Invalid credentials!",
-        });
+          return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+              status: 400,
+              success: false,
+              message: "Invalid credentials!",
+          });
       }
-  
+
       const isPasswordValid = await comparePassword(req.body.password, user.password);
       if (!isPasswordValid) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
-          success: false,
-          message: "Invalid credentials!",
-        });
+          return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+              status: 400,
+              success: false,
+              message: "Invalid credentials!",
+          });
       }
-  
-      // Generate access and refresh tokens
-      const access_token = encode_token(user._id, '30m');
-      const refresh_token = encode_token(user._id, '2d');
-  
-      // Get the existing tokens, if any
-      let oldTokens = user.tokens || [];
-  
-      // Clean up expired tokens: remove access tokens older than 30 minutes and refresh tokens older than 3 days
-      oldTokens = oldTokens.filter((token: any) => {
-        const timeDifference = (Date.now() - parseInt(token.signedAt)) / 1000;
-        if (token.access_token && timeDifference < 1800) {
-          return true; // Keep access tokens within 30 minutes
-        }
-        if (token.refresh_token && timeDifference < 172800) {
-          return true; // Keep refresh tokens within 3 days
-        }
-        return false; // Remove expired tokens
+
+      // Use the helper function to generate and store tokens
+      const { access_token, refresh_token } = await generateAndSaveTokens(user);
+
+      return res.status(status_codes.HTTP_200_OK).json({
+          success: true,
+          access_token,
+          refresh_token,
       });
-  
-      // Store both access and refresh tokens together
-      await User.findByIdAndUpdate(user._id, {
-        tokens: [
-          ...oldTokens,
-          { 
-            access_token,
-            refresh_token,
-            signedAt: Date.now().toString(),
-          },
-        ],
-      });
-  
-      // Update the user's last login time
-      user.lastLogin = new Date();
-      await user.save();
-  
-      // Send response with access and refresh tokens
-      res.status(status_codes.HTTP_200_OK).json({
-        success: true,
-        access_token: access_token,
-        refresh_token: refresh_token,
-      });
-    } catch (error) {
+
+  } catch (error) {
       console.error('Login error:', error);
       return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "An error occurred during login",
+          status: 500,
+          success: false,
+          message: "An error occurred during login",
       });
-    }
-  }  
+  }
+}
+
 
   static async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
@@ -344,3 +345,4 @@ class UserController {
 
 
 export default UserController;
+
