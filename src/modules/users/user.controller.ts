@@ -325,14 +325,9 @@ class UserController {
           .status(status_codes?.HTTP_404_NOT_FOUND)
           .json({ status: 404, message: "User not found" });
       }
- 
-
-      const salt = await bcrypt.genSalt(12); 
-      const userPassword = await bcrypt.hash(password, salt);
-
-      user.password = userPassword;
-
+      user.password = password;
       await user.save()
+
       return res.status(status_codes.HTTP_200_OK).json({status: 200, success: true, message: "Password reset successful"})
     } catch (error) {
       console.error("Password reset error:", error);
