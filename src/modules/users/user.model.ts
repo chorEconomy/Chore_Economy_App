@@ -1,26 +1,9 @@
 import { Schema, model, ObjectId, Document } from "mongoose";
+import { EGender, ERole, EStatus } from "../../models/enums";
 const bcrypt = require("bcrypt");
 
-export enum EGender {
-  Male = "male",
-  Female = "female",
-}
 
-export enum ERole {
-  Parent = "parent",
-  Child = "child",
-  Admin = "admin",
-}
-
-export enum EStatus {
-  Active = "active",
-  Inactive = "inactive",
-  Disabled = "disabled",
-}
-
-type Token =  {
-  [key: string]: any;
-}
+ 
 
 export interface IUser extends Document {
   firstName: string;
@@ -33,7 +16,6 @@ export interface IUser extends Document {
   photo: string;
   phoneNumber: string;
   role: ERole;
-  tokens: Token[];
   country: string;
   status: EStatus;
   verificationToken: string
@@ -57,16 +39,9 @@ const userSchema: Schema = new Schema<IUser>(
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     lastLogin: {type: Date, default: Date.now},
+    role: { type: String, enum: Object.values(ERole)},
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
     status: { type: String, enum: Object.values(EStatus), required: true, default: "inactive" as EStatus},
-    role: { type: String, enum: Object.values(ERole) },
-    tokens: [
-      {
-        access_token: { type: String },
-        refresh_token: { type: String },
-        signedAt: { type: String },
-      }
-    ],
   },
   { timestamps: true } // Automatic management of `createdAt` and `updatedAt`
 );

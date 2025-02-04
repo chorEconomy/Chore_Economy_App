@@ -21,3 +21,16 @@ export async function check_if_user_exist_with_id(userId = "") {
         return error.message;
     }
 }
+
+export async function getUserByEmailAndRole(email: string, role: string) {
+    try {
+        const user = await User.findOne({ email, role });
+        if (!user) {
+            return false;
+        } else {
+            return user
+        }
+    } catch (error: any) {
+        return error.message;
+    }
+}
