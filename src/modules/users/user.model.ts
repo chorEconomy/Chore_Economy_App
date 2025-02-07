@@ -1,6 +1,7 @@
 import { Schema, model, ObjectId, Document } from "mongoose";
 import { EGender, ERole, EStatus } from "../../models/enums";
 const bcrypt = require("bcrypt");
+const mongoose = require("mongoose");
 
 
  
@@ -25,6 +26,16 @@ export interface IUser extends Document {
   updatedAt: Date;
 }
 
+interface IKid extends Document {
+  parentId: ObjectId; // Reference to the Parent (User)
+  name: string;
+  password: string;
+  photo?: string; // Optional field
+  status: "active" | "inactive";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const userSchema: Schema = new Schema<IUser>(
   {
     firstName: { type: String, required: [true, 'First name is a required field'], trim: true },
@@ -39,12 +50,24 @@ const userSchema: Schema = new Schema<IUser>(
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     lastLogin: {type: Date, default: Date.now},
-    role: { type: String, enum: Object.values(ERole)},
+    role: { type: String, enum: Object.values(ERole)}, //Parent or Admin
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
     status: { type: String, enum: Object.values(EStatus), required: true, default: "inactive" as EStatus},
   },
   { timestamps: true } // Automatic management of `createdAt` and `updatedAt`
 );
+
+const kidSchema = new Schema<IKid>(
+  {
+    parentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Links the child to a parent
+    name: { type: String, required: true, trim: true },
+    password: { type: String, required: true },
+    photo: { type: String, default: null },
+    status: { type: String, enum: ["active", "inactive"], default: "inactive" },
+  },
+  { timestamps: true }
+);
+
 
 
 
@@ -61,5 +84,7 @@ userSchema.pre("save", async function (next) {
   }
 });
 
+
 // Export the model
 export const User = model<IUser>("User", userSchema);
+export const Kid = model<IKid>("Kid", kidSchema);

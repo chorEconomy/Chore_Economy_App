@@ -2,7 +2,7 @@ import { check_if_user_exist_with_email, check_if_user_exist_with_id, getUserByE
 import { Response, Request } from "express";
 import generateOTP from "../../utils/otp.utils"; 
 import { OTPInput, RegisterInputForParent } from "./user.types";
-import { User } from "./user.model";
+import { Kid, User } from "./user.model";
 import { sendResetPasswordEmail, sendVerificationEmail, sendWelcomeEmail } from "../../utils/email_sender.utils";
 import { EGender, ERole } from "../../models/enums";
 import status_codes from "../../utils/status_constants";
@@ -11,6 +11,9 @@ import RefreshToken from "./refresh.token.model";
 import comparePassword from "../../utils/compare_password"; 
 import CustomRequest from "../../models/CustomRequest";
 import { uploadSingleFile } from "../../utils/file_upload.utils";
+import AuthenticatedRequest from "../../models/AuthenticatedUser";
+import { hash } from "node:crypto";
+const bcrypt = require("bcrypt");
 
 class AuthService {
   static async register(
@@ -47,12 +50,10 @@ class AuthService {
 
     await newUser.save();
 
-    // await sendVerificationEmail(newUser.email, newUser.firstName, verificationToken);
+    await sendVerificationEmail(newUser.email, newUser.firstName, verificationToken);
 
     return newUser;
   }
-
-
     static async RegisterParent(req: CustomRequest, res: Response) {
       try {
         if (!req.body) {
@@ -76,11 +77,8 @@ class AuthService {
         // Upload image if provided
         let imageUrl: string | null = null;
         if (req.file) {
-          console.log(req.file);
           const result = await uploadSingleFile(req.file);
-          console.log("Cloudinary Upload Result:", result);
           imageUrl = result?.secure_url || null;
-          console.log(imageUrl);
         }
     
         // Register the user
@@ -416,7 +414,78 @@ class AuthService {
               message: "Internal Server Error",
             });
           }
-    } 
+  } 
+  
+  static async CreateKidProfile(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.body) {
+        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+          status: 422,
+          success: false,
+          message: "Unprocessable request body",
+        });
+      }
+
+      if (!req.user) {
+        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+          status: 401,
+          success: false,
+          message: "Unauthorized access",
+        });
+      }
+      console.log("Request Body:", req.body); // Debugging Request Body
+      console.log("File Data:", req.file); // Debugging Uploaded File
+      const { name, password } = req.body;
+      
+      console.log(name);
+      console.log(password);
+      const parentId = req.user;
+
+      const existingKid = await Kid.findOne({ parentId, name })
+
+      if (existingKid) {
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: `Kid with this account name already exists under your account`})
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10); 
+
+       // Upload image if provided
+       let imageUrl: string | null = null;
+       if (req.file) {
+         const result = await uploadSingleFile(req.file);
+         imageUrl = result?.secure_url || null;
+       }
+
+      const newKid = await new Kid({
+        parentId,
+        name,
+        password: hashedPassword,
+        photo: imageUrl
+      })
+
+      await newKid.save()
+
+      return res.status(status_codes.HTTP_201_CREATED).json({ status: 201, success: true, message: "Kid's profile created successfully!" })
+      
+    } catch (error: any) {
+      if (error.name === "ValidationError") {
+        const errors = Object.values(error.errors).map((err: any) => err.message);
+        return res.status(400).json({
+          success: false,
+          message: "Kid's account creation failed",
+          errors, // Sends all validation errors (e.g., missing name, invalid values)
+        });
+      }
+    
+      console.error("Kid's account creation Error:", error);
+      
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
 }
 
 

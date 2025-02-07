@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import AuthService from "./user.service";
 import { RequestUser } from "../../models/RequestUser";
+import AuthenticatedRequest from "../../models/AuthenticatedUser";
 const bcrypt = require("bcrypt");
 
 
@@ -38,7 +39,11 @@ static async forgotPassword(req: Request, res: Response, next: NextFunction) {
 
 static async resetPassword(req: Request, res: Response, next: NextFunction) { 
   return AuthService.ResetPassword(req, res);
-}
+  }
+
+  static async createKidProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) { 
+  return AuthService.CreateKidProfile(req, res);
+  }
 }
 
 

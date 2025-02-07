@@ -5,6 +5,7 @@ import { validateSignUpInputForParent, validateUserRequestPassword } from "../..
 import UserController from "./user.controller";
 import otpLimiter from "../../middlewares/otpLimter"; 
 import upload from "../../config/multer.config";
+import authorizeParent from "../../middlewares/authentication/parentRoleWare";
 
 
 
@@ -16,5 +17,6 @@ registerRouter.post("/refresh-token", authenticateUser, UserController.refreshTo
 registerRouter.post("/forgot-password", UserController.forgotPassword)
 registerRouter.post("/resend-otp", otpLimiter, UserController.resendOTP)
 registerRouter.post("/reset-password/:token", validateUserRequestPassword, UserController.resetPassword)
+registerRouter.post("/parent/child", upload.single("profile-image"), authorizeParent, validateUserRequestPassword, UserController.createKidProfile)
 
 export default registerRouter
