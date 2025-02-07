@@ -8,91 +8,102 @@ import { EGender, ERole } from "../../models/enums";
 import status_codes from "../../utils/status_constants";
 import { decode_token, generate_reset_token, generateTokens, verifyRefreshTokenAndIssueNewAccessToken } from "../../utils/token_management";
 import RefreshToken from "./refresh.token.model";
-import comparePassword from "../../utils/compare_password";
-import rateLimit from "express-rate-limit";
+import comparePassword from "../../utils/compare_password"; 
+import CustomRequest from "../../models/CustomRequest";
+import { uploadSingleFile } from "../../utils/file_upload.utils";
 
 class AuthService {
-    static async register (
-        reqBody: RegisterInputForParent,
-        res: Response
-    ) {
-        const {
-            first_name,
-            last_name,
-            email,
-            password,
-            gender,
-            country,
-            phone_number
-        } = reqBody;
-    
-        const verificationToken = generateOTP();
-    
-        const newUser: any = new User({
-            firstName: first_name,
-            lastName: last_name,
-            fullName: `${first_name} ${last_name}`,
-            email: email,
-            country: country,
-            password: password,
-            gender: gender?.toLowerCase() as EGender,
-            verificationToken,
-            verificationTokenExpiresAt: Date.now() + 5 * 60 * 1000,
-            phoneNumber: phone_number,
-            role: ERole.Parent,
-            emailVerified: false,
-        });
-    
-        console.log(newUser);
-    
-        await newUser.save(); 
-    
-        await sendVerificationEmail(
-            newUser.email,
-            newUser.firstName,
-            verificationToken
-        );
-        return newUser;
-    };
+  static async register(
+    reqBody: RegisterInputForParent,
+    imageUrl: string | null
+  ) {
+    const {
+      first_name,
+      last_name,
+      email,
+      password,
+      gender,
+      country,
+      phone_number,
+    } = reqBody;
 
-    static async RegisterParent(req: Request, res: Response) {
-        try {
-            if (!req.body) {
-              return res
-                .status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY)
-                .json({ status: 422,  success: false, message: "unprocessible request body" });
-            }
-      
-            const userAlreadyExists = await check_if_user_exist_with_email(
-              req?.body?.email
-            );
-            if (userAlreadyExists) {
-              return res.status(status_codes?.HTTP_409_CONFLICT).json({
-                status: 409,
-                success: false,
-                message: "User with this email already exist!",
-              });
-            }
-      
-            const user = await AuthService.register(req?.body, res); 
-      
-            return res.status(status_codes.HTTP_201_CREATED).json({
-              status: 201,
-              success: true,
-              message: "User created successfully",
-              user: {
-                ...user._doc,
-                password: undefined,
-              },
-            });
-              
-          } catch (error: any) {
-            return res.json({
-              status: status_codes.HTTP_500_INTERNAL_SERVER_ERROR,
-              success: false,
-              message: error?.message,
-            });
-          }
+    const verificationToken = generateOTP();
+
+    const newUser = new User({
+      firstName: first_name,
+      lastName: last_name,
+      fullName: `${first_name} ${last_name}`,
+      email,
+      country,
+      password,
+      gender: gender?.toLowerCase() as EGender,
+      verificationToken,
+      verificationTokenExpiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes expiration
+      phoneNumber: phone_number,
+      role: ERole.Parent,
+      photo: imageUrl,
+      emailVerified: false,
+    });
+
+    await newUser.save();
+
+    // await sendVerificationEmail(newUser.email, newUser.firstName, verificationToken);
+
+    return newUser;
+  }
+
+
+    static async RegisterParent(req: CustomRequest, res: Response) {
+      try {
+        if (!req.body) {
+          return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+            status: 422,
+            success: false,
+            message: "Unprocessable request body",
+          });
+        }
+    
+        // Check if user already exists
+        const userAlreadyExists = await check_if_user_exist_with_email(req.body.email);
+        if (userAlreadyExists) {
+          return res.status(status_codes.HTTP_409_CONFLICT).json({
+            status: 409,
+            success: false,
+            message: "User with this email already exists!",
+          });
+        }
+    
+        // Upload image if provided
+        let imageUrl: string | null = null;
+        if (req.file) {
+          console.log(req.file);
+          const result = await uploadSingleFile(req.file);
+          console.log("Cloudinary Upload Result:", result);
+          imageUrl = result?.secure_url || null;
+          console.log(imageUrl);
+        }
+    
+        // Register the user
+        const user = await AuthService.register(req.body, imageUrl);
+    
+        return res.status(status_codes.HTTP_201_CREATED).json({
+          status: 201,
+          success: true,
+          message: "User created successfully",
+          user: {
+            ...user.toObject(),
+            password: undefined, // Exclude password from response
+          },
+        });
+      } catch (error: any) {
+        console.error("Error in RegisterParent:", error);
+        return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+          status: 500,
+          success: false,
+          message: "Internal server error",
+          error: error?.message,
+        });
+      }
     }
     
     static async verifyEmail(otp: OTPInput) {

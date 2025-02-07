@@ -33,7 +33,7 @@ const userSchema: Schema = new Schema<IUser>(
     email: { type: String, required: [true, 'Email is a required field'], unique: true, trim: true },
     password: { type: String, required: [true, 'Password is a required field'] },
     country: { type: String, required: [true, 'Country is a required field'] },
-    photo: { type: String },
+    photo: { type: String, default: null },
     phoneNumber: { type: String, required: [true, 'Phone number is a required field'], unique: true },
     isVerified: { type: Boolean, default: false },
     verificationToken: String,

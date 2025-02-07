@@ -8,7 +8,8 @@ dotenv.config()
 const connectDB = require("./config/db")
 
 //Initializing PORT
-const port = process.env.PORT || 3030;
+// const port = process.env.PORT || 3030;
+const port = 3030;
 
 //Server listening function...
 app.listen(port, async () => {

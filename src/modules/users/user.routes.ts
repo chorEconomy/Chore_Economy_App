@@ -3,11 +3,12 @@ const registerRouter = express.Router();
 import authenticateUser from "../../middlewares/authentication/authware";
 import { validateSignUpInputForParent, validateUserRequestPassword } from "../../middlewares/validators/validator";
 import UserController from "./user.controller";
-import otpLimiter from "../../middlewares/otpLimter";
+import otpLimiter from "../../middlewares/otpLimter"; 
+import upload from "../../config/multer.config";
 
 
 
-registerRouter.post("/signup/parent", validateSignUpInputForParent, UserController.registerParent)
+registerRouter.post("/signup/parent", upload.single("profile-image"), validateSignUpInputForParent, UserController.registerParent)
 registerRouter.post("/verify-email", UserController.verifyEmail)
 registerRouter.post("/logout", authenticateUser, UserController.logout)
 registerRouter.post("/login", UserController.login) 
