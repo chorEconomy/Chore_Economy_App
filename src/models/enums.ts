@@ -20,3 +20,8 @@ export enum EChoreStatus {
   InProgress = "inprogress",
   Unclaimed = "unclaimed"
 }
+
+export enum ExpenseStatus {
+  Paid = "paid",
+  Unpaid = "unpaid"
+}

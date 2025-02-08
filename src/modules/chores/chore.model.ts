@@ -17,7 +17,7 @@ const choreSchema: Schema = new Schema<IChore>({
     title: { type: String, required: [true, 'Title is a required field'], trim: true},
     description: { type: String, required: [true, 'Description is a required field'], trim: true },
     earn: { type: Number, required: [true, 'Earn is a required field'], default: 0 },
-    status: { type: String, enum: Object.values(EChoreStatus), required: true, default: "unclaimed" as EChoreStatus},
+    status: { type: String, enum: Object.values(EChoreStatus), required: true, default: EChoreStatus.Unclaimed},
     dueDate: { type: Date, default: null },
 },
     { timestamps: true }
