@@ -1,6 +1,6 @@
 const express = require("express");
 import { NextFunction, Request, Response } from "express"; 
-import registerRouter from "./modules/users/user.routes";
+import authRouter from "./modules/users/user.routes";
 import choreRouter from "./modules/chores/chore.routes";
 import expenseRouter from "./modules/expenses/expense.routes";
 import HttpException from "./models/HttpException"
@@ -27,7 +27,7 @@ app.get("/api/v1/home", (req: Request, res: Response) => {
     });
 });
 
-app.use("/api/v1/auth", registerRouter)
+app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/chores", choreRouter)
 app.use("/api/v1/expenses", expenseRouter)
 

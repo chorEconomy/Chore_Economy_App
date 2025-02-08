@@ -5,7 +5,7 @@ import { ERole } from "../../models/enums";
 import { RequestUser } from "../../models/RequestUser";
 import { check_if_user_exist_with_id } from "../../utils/check_user_exists.utils";
 
-const authorizeChild = async (req: RequestUser, res: Response, next: NextFunction) => {
+const authorizeKid = async (req: RequestUser, res: Response, next: NextFunction) => {
     const secret = process.env.ACCESS_SECRET;
     
     if (!secret) {
@@ -64,4 +64,4 @@ const authorizeChild = async (req: RequestUser, res: Response, next: NextFunctio
     }
 };
 
-export default authorizeChild;
+export default authorizeKid;

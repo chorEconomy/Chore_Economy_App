@@ -642,6 +642,67 @@ class AuthService {
       });
     }
   }
+
+  static async DeleteKidProfile(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+          status: 401,
+          success: false,
+          message: "Unauthorized access",
+        });
+      }
+
+      const parentId = req.user;
+
+      const existingParent = await User.findById(parentId);
+
+      if (!existingParent) {
+        return res
+          .status(status_codes.HTTP_404_NOT_FOUND)
+          .json({
+            status: 404,
+            success: false,
+            message: `Parent with the id: ${parentId} not found`,
+          });
+      }
+
+      const {id} = req.params
+
+      if (!id) {
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: "Provide a valid id"})
+      }
+
+      const existingKid = await Kid.findByIdAndDelete(id)
+      
+      if (!existingKid) {
+        return res
+          .status(status_codes.HTTP_404_NOT_FOUND)
+          .json({
+            status: 404,
+            success: false,
+            message: `Kid's profile not found`,
+          });
+      }
+
+      return res
+          .status(status_codes.HTTP_200_OK)
+          .json({
+            status: 200,
+            success: false,
+            message: `Kid's profile deleted successfully`,
+          });
+
+    } catch (error: any) {
+      console.error("Delete kid profile error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+        error: error?.message
+      });
+    }
+  }
 }
 
 export default AuthService;
