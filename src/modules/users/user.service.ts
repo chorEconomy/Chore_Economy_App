@@ -464,12 +464,85 @@ class AuthService {
           success: true,
           message: "Password reset successful",
         });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Password reset error:", error);
       return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
         status: 500,
         success: false,
         message: "Internal Server Error",
+        error: error?.message
+      });
+    }
+  }
+
+  static async EditProfile(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (Object.keys(req.body).length === 0 && !req.file) {
+        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+          status: 422,
+          success: false,
+          message: "No data provided for update",
+        });
+      }
+
+      if (!req.user) {
+        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+          status: 401,
+          success: false,
+          message: "Unauthorized access",
+        });
+      }
+
+      const parentId = req.user;
+
+      const existingParent = await User.findById(parentId);
+
+      if (!existingParent) {
+        return res
+          .status(status_codes.HTTP_404_NOT_FOUND)
+          .json({
+            status: 404,
+            success: false,
+            message: `Parent with the id: ${parentId} not found`,
+          });
+      }
+
+      const {first_name, last_name, phone_number, country, gender} = req.body
+         
+      // Upload image if provided
+         let imageUrl: string | null = "";
+         if (req.file) {
+           const result = await uploadSingleFile(req.file);
+           imageUrl = result?.secure_url || existingParent.photo;
+         }
+      
+        existingParent.firstName = first_name ?? existingParent.firstName;
+        existingParent.lastName = last_name ?? existingParent.lastName;
+        existingParent.photo = imageUrl;
+        existingParent.phoneNumber = phone_number ?? existingParent.phoneNumber;
+        existingParent.gender = gender ?? existingParent.gender;
+        existingParent.country = country ?? existingParent.country;
+
+      await existingParent.save()
+
+      return res
+      .status(status_codes.HTTP_200_OK)
+      .json({
+        status: 200,
+        success: true,
+        message: "Profile updated successfully",
+        data: {
+          ...existingParent.toObject(),
+          password: undefined
+        }
+      });
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+        error: error?.message
       });
     }
   }

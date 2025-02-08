@@ -9,5 +9,7 @@ choreRouter.get("/", authorizeParent, ChoreController.fetchAllChores)
 choreRouter.get("/completed", authorizeParent, ChoreController.fetchCompletedChores)
 choreRouter.get("/unclaimed", authorizeParent, ChoreController.fetchUnclaimedChores)
 choreRouter.get("/inprogress", authorizeParent, ChoreController.fetchInProgressChores)
+choreRouter.get("/:id", authorizeParent, ChoreController.fetchChore)
+choreRouter.get("/:id/approve", authorizeParent, ChoreController.approveChoreReward)
 
 export default choreRouter

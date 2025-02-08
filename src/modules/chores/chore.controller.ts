@@ -24,6 +24,14 @@ class ChoreController {
     static async fetchUnclaimedChores(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         return ChoreService.fetchUnclaimedChores(req, res);
     }
+   
+    static async fetchChore(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+        return ChoreService.fetchChore(req, res);
+    }
+
+    static async approveChoreReward(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+        return ChoreService.approveChoreReward(req, res);
+    }
 }
 
 export default ChoreController

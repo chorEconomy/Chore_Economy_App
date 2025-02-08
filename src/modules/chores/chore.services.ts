@@ -5,6 +5,8 @@ import status_codes from "../../utils/status_constants";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
 import { User } from "../users/user.model";
 import { EChoreStatus } from "../../models/enums";
+import { stat } from "fs";
+import { inflateRawSync } from "zlib";
 
 class ChoreService {
   static async createChore(req: AuthenticatedRequest, res: Response) {
@@ -166,7 +168,7 @@ class ChoreService {
           return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
       }
 
-      const completedChores = await Chore.find({status: EChoreStatus.Completed})
+      const completedChores = await Chore.find({status: EChoreStatus.Completed}).populate("kidId")
 
       return res
         .status(status_codes.HTTP_200_OK)
@@ -225,6 +227,108 @@ class ChoreService {
       });
     }
   }
+
+  static async fetchChore(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+          status: 401,
+          success: false,
+          message: "Unauthorized access",
+        });
+      }
+      const { id } = req.params
+      
+      if (!id) {
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: "Provide a valid id"})
+      }
+
+      const parentId = req.user;
+      const existingParent = await User.findById({ _id: parentId })
+
+      if (!existingParent) {
+          return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
+      }
+
+   
+      const existingChore = await Chore.findById({ _id: id })
+
+      if (!existingChore) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, messgae: `Chore with this id: ${id} not found!`})
+      }
+
+      return res
+        .status(status_codes.HTTP_200_OK)
+        .json({
+          status: 200,
+          success: true,
+          data: existingChore,
+          message: "Chore retrieved successfully",
+        });
+      
+    } catch (error: any) {
+      console.error("Chore fetching error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal server error",
+        error: error?.message,
+      });
+    }
+  }
+
+  static async approveChoreReward(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+          status: 401,
+          success: false,
+          message: "Unauthorized access",
+        });
+      }
+      const { id } = req.params
+      
+      if (!id) {
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: "Provide a valid id!"})
+      }
+
+      const parentId = req.user;
+      const existingParent = await User.findById({ _id: parentId })
+
+      if (!existingParent) {
+          return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
+      }
+
+   
+      const existingChore = await Chore.findById({ _id: id })
+
+      if (!existingChore) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, messgae: `Chore with this id: ${id} not found!`})
+      }
+
+      existingChore.isRewardApproved = true;
+      existingChore.save()
+
+      return res
+        .status(status_codes.HTTP_200_OK)
+        .json({
+          status: 200,
+          success: true,
+          data: existingChore,
+          message: "Reward approved successfully",
+        });
+      
+    } catch (error: any) {
+      console.error("Chore fetching error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal server error",
+        error: error?.message,
+      });
+    }
+  }
+
 }
 
 export default ChoreService;

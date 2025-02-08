@@ -41,6 +41,10 @@ static async resetPassword(req: Request, res: Response, next: NextFunction) {
   return AuthService.ResetPassword(req, res);
   }
 
+  static async editProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) { 
+  return AuthService.EditProfile(req, res);
+  }
+
   static async createKidProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) { 
   return AuthService.CreateKidProfile(req, res);
   }

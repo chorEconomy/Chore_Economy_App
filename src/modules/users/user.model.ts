@@ -14,7 +14,7 @@ export interface IUser extends Document {
   password: string;
   isVerified: boolean;
   gender: EGender;
-  photo: string;
+  photo: string | null;
   phoneNumber: string;
   role: ERole;
   country: string;

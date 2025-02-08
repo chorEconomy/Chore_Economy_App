@@ -16,6 +16,7 @@ registerRouter.post("/refresh-token", authenticateUser, UserController.refreshTo
 registerRouter.post("/forgot-password", UserController.forgotPassword)
 registerRouter.post("/resend-otp", otpLimiter, UserController.resendOTP)
 registerRouter.post("/reset-password/:token", validateUserRequestPassword, UserController.resetPassword)
+registerRouter.put("/parent/update", upload.single("profile-image"), authorizeParent, UserController.editProfile)
 registerRouter.post("/parent/child", upload.single("profile-image"), authorizeParent, validateUserRequestPassword, UserController.createKidProfile)
 
 export default registerRouter
