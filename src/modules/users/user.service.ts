@@ -1,6 +1,7 @@
 import {
   check_if_user_exist_with_email,
-  check_if_user_exist_with_id,
+  check_if_user_or_kid_exists,
+  getKidByNameAndRole,
   getUserByEmailAndRole,
 } from "../../utils/check_user_exists.utils";
 import { Response, Request } from "express";
@@ -12,7 +13,7 @@ import {
   sendVerificationEmail,
   sendWelcomeEmail,
 } from "../../utils/email_sender.utils";
-import { EGender, ERole } from "../../models/enums";
+import { EGender, ERole, EStatus } from "../../models/enums";
 import status_codes from "../../utils/status_constants";
 import {
   decode_token,
@@ -134,6 +135,7 @@ class AuthService {
       }
 
       user.isVerified = true;
+      user.status = EStatus.Active
       user.verificationToken = undefined;
       user.verificationTokenExpiresAt = undefined;
 
@@ -448,7 +450,7 @@ class AuthService {
           message: "link has expired or token not valid",
         });
       }
-      const user = await check_if_user_exist_with_id(userId);
+      const user = await check_if_user_or_kid_exists(userId);
       if (!user) {
         res
           .status(status_codes?.HTTP_404_NOT_FOUND)
@@ -609,6 +611,7 @@ class AuthService {
         name,
         password: hashedPassword,
         photo: imageUrl,
+        status: EStatus.Active
       });
 
       await newKid.save();
@@ -695,6 +698,73 @@ class AuthService {
 
     } catch (error: any) {
       console.error("Delete kid profile error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+        error: error?.message
+      });
+    }
+  }
+
+  static async LoginKid(req: Request, res: Response) {
+    try {
+      
+      if (!req.body) {
+      return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+        status: 422,
+        success: false,
+        message: "Unprocessable request body",
+      });
+      }
+      
+      const { name } = req.body
+      
+
+    const role = req.query.role as string;
+    if (!role) {
+      return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+        status: 400,
+        success: false,
+        message: "Please provide a valid user's role",
+      });
+    }
+      
+      const kid = await getKidByNameAndRole(name, role)
+      console.log(kid);
+      
+     
+      if (!kid) {
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+          status: 400,
+          success: false,
+          message: "Invalid credentials!",
+        });
+      }
+
+      const isPasswordValid = await comparePassword(
+        req.body.password,
+        kid.password
+      );
+
+      if (!isPasswordValid) {
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+          status: 400,
+          success: false,
+          message: "Invalid credentials!",
+        });
+      }
+      const { access_token, refresh_token } = await generateTokens(kid);
+
+      return res.status(status_codes.HTTP_200_OK).json({
+        success: true,
+        access_token,
+        refresh_token,
+        role: kid.role,
+      });
+
+    } catch (error: any) {
+      console.error("Login kid error:", error);
       return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
         status: 500,
         success: false,

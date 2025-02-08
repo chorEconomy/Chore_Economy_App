@@ -5,8 +5,6 @@ import status_codes from "../../utils/status_constants";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
 import { User } from "../users/user.model";
 import { EChoreStatus } from "../../models/enums";
-import { stat } from "fs";
-import { inflateRawSync } from "zlib";
 
 class ChoreService {
   static async createChore(req: AuthenticatedRequest, res: Response) {
@@ -96,8 +94,8 @@ class ChoreService {
         .json({
           status: 200,
           success: true,
-          data: chores,
           message: "Chores retrieved successfully",
+          data: chores
         });
       
     } catch (error: any) {
@@ -137,8 +135,8 @@ class ChoreService {
         .json({
           status: 200,
           success: true,
-          data: inProgressChores,
           message: "In-Progress chores retrieved successfully",
+          data: inProgressChores,
         });
       
     } catch (error: any) {
@@ -175,8 +173,8 @@ class ChoreService {
         .json({
           status: 200,
           success: true,
-          data: completedChores,
           message: "Completed chores retrieved successfully",
+          data: completedChores,
         });
       
     } catch (error: any) {
@@ -213,8 +211,8 @@ class ChoreService {
         .json({
           status: 200,
           success: true,
-          data: unclaimedChores,
           message: "Unclaimed chores retrieved successfully",
+          data: unclaimedChores
         });
       
     } catch (error: any) {
@@ -249,9 +247,8 @@ class ChoreService {
       if (!existingParent) {
           return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
       }
-
-   
-      const existingChore = await Chore.findById({ _id: id })
+ 
+      const existingChore = await Chore.findById(id)
 
       if (!existingChore) {
         return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, messgae: `Chore with this id: ${id} not found!`})
@@ -262,8 +259,8 @@ class ChoreService {
         .json({
           status: 200,
           success: true,
-          data: existingChore,
           message: "Chore retrieved successfully",
+          data: existingChore
         });
       
     } catch (error: any) {

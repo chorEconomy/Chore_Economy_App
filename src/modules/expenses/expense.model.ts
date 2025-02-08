@@ -1,5 +1,6 @@
 import { Schema, model, ObjectId, Document } from "mongoose"; 
 import { ExpenseStatus } from "../../models/enums";
+const mongoose = require("mongoose")
 
 interface IExpense extends Document {
     parentId: ObjectId

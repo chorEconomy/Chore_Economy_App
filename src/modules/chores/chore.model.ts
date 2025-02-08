@@ -1,5 +1,6 @@
 import { Schema, model, ObjectId, Document } from "mongoose"; 
 import { EChoreStatus } from "../../models/enums";
+const mongoose = require("mongoose")
 
 interface IChore extends Document {
     parentId: ObjectId

@@ -7,6 +7,7 @@ import upload from "../../config/multer.config";
 
 expenseRouter.post("", authorizeParent, ExpenseController.createExpense)
 expenseRouter.get("", authorizeParent, ExpenseController.fetchAllExpenses)
+expenseRouter.get("/:id", authorizeParent, ExpenseController.fetchExpense)
 expenseRouter.get("/paid", authorizeParent, ExpenseController.fetchPaidExpense)
 expenseRouter.get("/unpaid", authorizeParent, ExpenseController.fetchUnpaidExpenses)
 

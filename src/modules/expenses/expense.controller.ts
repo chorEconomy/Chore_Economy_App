@@ -12,6 +12,10 @@ class ExpenseController {
     static async fetchAllExpenses(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         return ExpenseService.fetchAllExpenses(req, res)
     }
+  
+    static async fetchExpense(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+        return ExpenseService.fetchOneExpense(req, res)
+    }
 
     static async fetchPaidExpense(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         return ExpenseService.fetchPaidExpenses(req, res)

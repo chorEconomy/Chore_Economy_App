@@ -1,7 +1,7 @@
 const express = require("express");
 const authRouter = express.Router();
 import authenticateUser from "../../middlewares/authentication/authware";
-import { validateSignUpInputForParent, validateUserRequestPassword } from "../../middlewares/validators/validator";
+import { validateAuthInputForKid, validateSignUpInputForParent, validateUserRequestPassword } from "../../middlewares/validators/validator";
 import UserController from "./user.controller";
 import otpLimiter from "../../middlewares/otpLimter"; 
 import upload from "../../config/multer.config";
@@ -18,7 +18,8 @@ authRouter.post("/forgot-password", UserController.forgotPassword)
 authRouter.post("/resend-otp", otpLimiter, UserController.resendOTP)
 authRouter.post("/reset-password/:token", validateUserRequestPassword, UserController.resetPassword)
 authRouter.put("/parent/update", upload.single("profile-image"), authorizeParent, UserController.editProfile)
-authRouter.post("/parent/kids", upload.single("profile-image"), authorizeParent, validateUserRequestPassword, UserController.createKidProfile)
+authRouter.post("/parent/kids", upload.single("profile-image"), authorizeParent, validateAuthInputForKid, UserController.createKidProfile)
 authRouter.delete("/parent/kids/:id", authorizeParent, UserController.deleteKidProfile)
+authRouter.post("/kids/login", UserController.loginKid)
 
 export default authRouter

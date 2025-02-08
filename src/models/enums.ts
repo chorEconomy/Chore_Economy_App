@@ -5,7 +5,7 @@ export enum EGender {
 
 export enum ERole {
   Parent = "parent",
-  Child = "child",
+  Kid = "kid",
   Admin = "admin",
 }
 

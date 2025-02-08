@@ -5,6 +5,7 @@ import status_codes from "../../utils/status_constants";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
 import { User } from "../users/user.model";
 import { ExpenseStatus } from "../../models/enums";
+import { log } from "node:console";
 
 class ExpenseService {
   static async createExpense(req: AuthenticatedRequest, res: Response) {
@@ -92,13 +93,68 @@ class ExpenseService {
         .status(status_codes.HTTP_200_OK)
         .json({
           status: 200,
-          data: expenses,
           success: true,
           message: "Expenses retrieved successfully",
+          data: expenses
         });
       
     } catch (error: any) {
       console.error("Expense retrieval error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal server error",
+        error: error?.message,
+      });
+    }
+  }
+
+  static async fetchOneExpense(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+          status: 401,
+          success: false,
+          message: "Unauthorized access",
+        });
+      }
+      const { id } = req.params
+      
+      if (!id) {
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: "Provide a valid id"})
+      }
+
+      const parentId = req.user;
+      console.log(parentId);
+      
+      const existingParent = await User.findById({ _id: parentId });
+      console.log(existingParent);
+      
+      if (!existingParent) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({
+          status: 404,
+          success: false,
+          message: `Parent with the id: ${parentId} not found`,
+        });
+      }
+
+      const existingExpense = await Expense.findById(id)
+      
+      if (!existingExpense) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, messgae: `Expense with this id: ${id} not found!`})
+      }
+
+      return res
+        .status(status_codes.HTTP_200_OK)
+        .json({
+          status: 200,
+          success: true,
+          message: "Expense retrieved successfully",
+          data: existingExpense
+        });
+
+    } catch (error: any) {
+      console.error("fetch Expense error:", error);
       return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
         status: 500,
         success: false,
@@ -180,8 +236,8 @@ class ExpenseService {
       .json({
         status: 200,
         success: true,
-        data: unpaidExpenses,
         message: "Unpaid expenses retrieved successfully",
+        data: unpaidExpenses
       });
     } catch (error: any) {
       console.error("fetchPaidExpenses error:", error);

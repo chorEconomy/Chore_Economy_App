@@ -30,8 +30,9 @@ interface IKid extends Document {
   parentId: ObjectId; // Reference to the Parent (User)
   name: string;
   password: string;
+  role: ERole;
   photo?: string; // Optional field
-  status: "active" | "inactive";
+  status: EStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,7 +53,7 @@ const userSchema: Schema = new Schema<IUser>(
     lastLogin: {type: Date, default: Date.now},
     role: { type: String, enum: Object.values(ERole)}, //Parent or Admin
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
-    status: { type: String, enum: Object.values(EStatus), required: true, default: "inactive" as EStatus},
+    status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active},
   },
   { timestamps: true } // Automatic management of `createdAt` and `updatedAt`
 );
@@ -63,7 +64,8 @@ const kidSchema = new Schema<IKid>(
     name: { type: String, required: true, trim: true },
     password: { type: String, required: true },
     photo: { type: String, default: null },
-    status: { type: String, enum: ["active", "inactive"], default: "inactive" },
+    role: { type: String, enum: Object.values(ERole), default: ERole.Kid},
+    status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active},
   },
   { timestamps: true }
 );

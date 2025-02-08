@@ -58,6 +58,30 @@ const validateSignUpInputForAdmin = (req: Request, res: Response, next: NextFunc
     }
 };
 
+const validateAuthInputForKid = (req: Request, res: Response, next: NextFunction) => {
+    const errors: string[] = [];
+    const sanitizedData = {
+        name: req.body.name?.trim() || "",
+        password: req.body.password?.trim() || "",
+    };
+
+    if (!sanitizedData.name) {
+        errors.push("Name is required");
+    }
+
+    const passwordErrors = validatePassword(sanitizedData.password);
+    errors.push(...passwordErrors);
+
+    if (!errors.length) {
+        req.body = sanitizedData;
+        next();
+    } else {
+        res.status(status_codes.HTTP_400_BAD_REQUEST).json({ status: 400, errors });
+    }
+};
+
+
+
 
 const validateSignInInput = (req: Request, res: Response, next: NextFunction) => {
     const errors: string[] = [];
@@ -135,4 +159,4 @@ function validateUserRequestPassword(req: Request, res: Response, next: NextFunc
 
 
 
-export {validateSignUpInputForParent, validateSignUpInputForAdmin, validateSignInInput, validateUserRequestPassword}
+export {validateSignUpInputForParent, validateSignUpInputForAdmin, validateAuthInputForKid, validateSignInInput, validateUserRequestPassword}

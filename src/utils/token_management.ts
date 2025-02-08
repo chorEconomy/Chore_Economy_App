@@ -33,8 +33,8 @@ async function generateTokens(user: any) {
     user.lastLogin = new Date();
     await user.save();
 
-    await storeRefreshToken(user._id, refresh_token)
-
+    await storeRefreshToken(user._id, refresh_token) 
+    
     return { access_token, refresh_token };
 }
 
