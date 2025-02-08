@@ -11,8 +11,7 @@ import RefreshToken from "./refresh.token.model";
 import comparePassword from "../../utils/compare_password"; 
 import CustomRequest from "../../models/CustomRequest";
 import { uploadSingleFile } from "../../utils/file_upload.utils";
-import AuthenticatedRequest from "../../models/AuthenticatedUser";
-import { hash } from "node:crypto";
+import AuthenticatedRequest from "../../models/AuthenticatedUser"; 
 const bcrypt = require("bcrypt");
 
 class AuthService {

@@ -1,6 +1,7 @@
 const express = require("express");
 import { NextFunction, Request, Response } from "express"; 
 import registerRouter from "./modules/users/user.routes";
+import choreRouter from "./modules/chores/chore.routes";
 import HttpException from "./models/HttpException"
 
 const cors = require("cors"); 
@@ -26,6 +27,7 @@ app.get("/api/v1/home", (req: Request, res: Response) => {
 });
 
 app.use("/api/v1/auth", registerRouter)
+app.use("/api/v1/chores", choreRouter)
 
 // Controlling when a user try to hit on any undefined route or path....
 app.use("*", (req: Request, res: Response, next: NextFunction) => {

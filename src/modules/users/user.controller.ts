@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import AuthService from "./user.service";
 import { RequestUser } from "../../models/RequestUser";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
-const bcrypt = require("bcrypt");
+ 
 
 
 class UserController {

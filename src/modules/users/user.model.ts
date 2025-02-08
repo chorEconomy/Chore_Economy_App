@@ -69,8 +69,6 @@ const kidSchema = new Schema<IKid>(
 );
 
 
-
-
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next();

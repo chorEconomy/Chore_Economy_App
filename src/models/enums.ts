@@ -14,3 +14,9 @@ export enum EStatus {
   Inactive = "inactive",
   Disabled = "disabled",
 }
+
+export enum EChoreStatus {
+  Completed = "completed",
+  InProgress = "inprogress",
+  Unclaimed = "unclaimed"
+}

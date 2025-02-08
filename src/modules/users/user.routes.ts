@@ -8,7 +8,6 @@ import upload from "../../config/multer.config";
 import authorizeParent from "../../middlewares/authentication/parentRoleWare";
 
 
-
 registerRouter.post("/signup/parent", upload.single("profile-image"), validateSignUpInputForParent, UserController.registerParent)
 registerRouter.post("/verify-email", UserController.verifyEmail)
 registerRouter.post("/logout", authenticateUser, UserController.logout)
