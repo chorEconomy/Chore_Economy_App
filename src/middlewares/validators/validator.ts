@@ -7,6 +7,7 @@ const validateSignUpInputForParent = (req: Request, res: Response, next: NextFun
         first_name: req.body.first_name?.trim() || "",
         last_name: req.body.last_name?.trim() || "",
         email: req.body.email?.trim().toLowerCase() || "",
+        photo: req.body.photo?.trim() || "",
         phone_number: req.body.phone_number?.trim() || "",
         country: req.body.country?.trim() || "",
         gender: req.body.gender?.trim() || "",

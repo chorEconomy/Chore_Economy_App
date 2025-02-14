@@ -33,6 +33,7 @@ class AuthService {
     reqBody: RegisterInputForParent,
     imageUrl: string | null
   ) {
+    
     const {
       first_name,
       last_name,
@@ -71,6 +72,7 @@ class AuthService {
 
     return newUser;
   }
+
   static async RegisterParent(req: CustomRequest, res: Response) {
     try {
       if (!req.body) {
@@ -80,7 +82,7 @@ class AuthService {
           message: "Unprocessable request body",
         });
       }
-
+  
       // Check if user already exists
       const userAlreadyExists = await check_if_user_exist_with_email(
         req.body.email
@@ -92,22 +94,26 @@ class AuthService {
           message: "User with this email already exists!",
         });
       }
-
-      // Upload image if provided
+  
+      // Determine profile image source
       let imageUrl: string | null = null;
-      if (req.file) {
+
+      if (req.body.photo) {
+        // User selected an avatar from predefined options
+        imageUrl = req.body.photo;
+      } else if (req.file) {
+        // User uploaded a photo (from gallery or camera)
         const result = await uploadSingleFile(req.file);
         imageUrl = result?.secure_url || null;
       }
-
-      // Register the user
+      // Register the user with the selected or uploaded image URL
       const user = await AuthService.register(req.body, imageUrl);
-
+  
       return res.status(status_codes.HTTP_201_CREATED).json({
         status: 201,
         success: true,
         message: "User created successfully",
-        user: {
+        data: {
           ...user.toObject(),
           password: undefined, // Exclude password from response
         },
@@ -122,6 +128,7 @@ class AuthService {
       });
     }
   }
+  
 
   static async verifyEmail(otp: OTPInput) {
     try {
@@ -346,7 +353,7 @@ class AuthService {
         success: true,
         access_token,
         refresh_token,
-        role: user.role,
+        user: {...user.toObject(), password: undefined}
       });
     } catch (error) {
       console.error("Login error:", error);
