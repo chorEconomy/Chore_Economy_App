@@ -207,6 +207,7 @@ class AuthService {
         message: "Email verified successfully! User logged in.",
         access_token,
         refresh_token,
+        user: {...user.toObject(), password: undefined}
       });
     } catch (error: any) {
       console.error("Verify Email error:", error);
