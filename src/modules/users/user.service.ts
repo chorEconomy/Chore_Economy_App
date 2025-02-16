@@ -132,30 +132,35 @@ class AuthService {
 
   static async verifyEmail(otp: OTPInput) {
     try {
-      const user: any = await User.findOne({
-        verificationToken: otp,
-        verificationTokenExpiresAt: { $gt: Date.now() },
-      });
+        const user: any = await User.findOne({
+            verificationToken: otp,
+            verificationTokenExpiresAt: { $gt: Date.now() },
+        });
 
-      if (!user) {
-        return "Invalid or expired OTP";
-      }
+        if (!user) {
+            return "Invalid or expired OTP";
+        }
 
-      user.isVerified = true;
-      user.status = EStatus.Active
-      user.verificationToken = undefined;
-      user.verificationTokenExpiresAt = undefined;
+        const isFirstTimeVerification = !user.isVerified; // Check if email was not verified before
 
-      await user.save();
+        user.isVerified = true;
+        user.status = EStatus.Active;
+        user.verificationToken = undefined;
+        user.verificationTokenExpiresAt = undefined;
 
-      await sendWelcomeEmail(user.firstName, user.email);
-      return;
+        await user.save();
+
+        // Send welcome email only if the user is verifying their email for the first time
+        if (isFirstTimeVerification) {
+            await sendWelcomeEmail(user.firstName, user.email);
+        }
+
+        return;
     } catch (error: any) {
-      throw new Error(
-        error.message || "An error occurred during email verification"
-      );
+        throw new Error(error.message || "An error occurred during email verification");
     }
-  }
+}
+
 
   static async VerifyEmail(req: Request, res: Response) {
     try {
@@ -328,6 +333,8 @@ class AuthService {
       }
 
       const user = await getUserByEmailAndRole(req.body.email, role);
+      console.log(user.password);
+      
 
       if (!user) {
         return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
@@ -340,7 +347,9 @@ class AuthService {
       const isPasswordValid = await comparePassword(
         req.body.password,
         user.password
-      );
+      ); 
+      console.log(isPasswordValid);
+      
       if (!isPasswordValid) {
         return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
           status: 400,
@@ -397,93 +406,108 @@ class AuthService {
     }
   }
 
-  static async ForgotPassword(req: Request, res: Response) {
-    try {
-      if (!req.body) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
-          success: false,
-          message: "Unprocessable request body",
-        });
-      }
-      const { email } = req?.body;
-      const user = await check_if_user_exist_with_email(email);
-      if (!user) {
-        return res
-          .status(status_codes.HTTP_404_NOT_FOUND)
-          .json({ status: 404, message: "User not found" });
-      }
-
-      const reset_token = await generate_reset_token(user);
-
-      console.log(reset_token);
-
-      const resetPasswordLink = `${process.env.CLIENT_URL}/reset-password/${reset_token}`;
-
-      sendResetPasswordEmail(user.firstName, user.email, resetPasswordLink);
-
-      res
-        .status(status_codes.HTTP_200_OK)
-        .json({
-          success: true,
-          status: 200,
-          message: "Password reset link sent to your email.",
-        });
-    } catch (error) {
-      console.error("Forgot password error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
+ 
+static async ForgotPassword(req: Request, res: Response) {
+  try {
+    if (!req.body?.email) {
+      return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+        status: 422,
         success: false,
-        message: "Internal Server Error",
+        message: "Email is required",
       });
     }
-  }
 
-  static async ResetPassword(req: Request, res: Response) {
-    try {
-      if (!req.body) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
-          success: false,
-          message: "Unprocessable request body",
-        });
-      }
-      const { token } = req.params;
-      const { password } = req.body;
-      const userId = decode_token(token);
-      if (!userId) {
-        res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
-          success: false,
-          message: "link has expired or token not valid",
-        });
-      }
-      const user = await check_if_user_or_kid_exists(userId);
-      if (!user) {
-        res
-          .status(status_codes?.HTTP_404_NOT_FOUND)
-          .json({ status: 404, message: "User not found" });
-      }
-      user.password = password;
-      await user.save();
+    const { email } = req.body;
+    const user = await check_if_user_exist_with_email(email);
 
-      return res
-        .status(status_codes.HTTP_200_OK)
-        .json({
-          status: 200,
-          success: true,
-          message: "Password reset successful",
-        });
-    } catch (error: any) {
-      console.error("Password reset error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
+    if (!user) {
+      return res.status(status_codes.HTTP_404_NOT_FOUND).json({
+        status: 404,
         success: false,
-        message: "Internal Server Error",
-        error: error?.message
+        message: "User not found",
       });
     }
+
+    // Prevent multiple OTP requests within a short time
+    if (user.verificationTokenExpiresAt && user.verificationTokenExpiresAt > Date.now()) {
+      return res.status(status_codes.HTTP_429_TOO_MANY_REQUESTS).json({
+        status: 429,
+        success: false,
+        message: "OTP already sent. Please wait before requesting again.",
+      });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    user.verificationToken = otp;
+    user.verificationTokenExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes expiration
+
+    await user.save();
+    sendResetPasswordEmail(user.firstName, user.email, otp);
+
+    return res.status(status_codes.HTTP_200_OK).json({
+      success: true,
+      status: 200,
+      message: "Password reset OTP sent to your email.",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+      status: 500,
+      success: false,
+      message: "Internal Server Error",
+    });
   }
+}
+
+
+static async ResetPassword(req: Request, res: Response) {
+  try { 
+    if (!req.body?.email || !req.body?.password) {
+      return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+        status: 422,
+        success: false,
+        message: "Email and new password are required",
+      });
+    }
+
+    const { email, password } = req.body;
+
+    // Find user by email
+    const user: any = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(status_codes.HTTP_404_NOT_FOUND).json({
+        status: 404,
+        success: false,
+        message: "User not found",
+      });
+    }
+    console.log(user.password );
+    
+     
+    user.password = password
+    
+    await user.save();
+    console.log(user.password );
+    
+    return res.status(status_codes.HTTP_200_OK).json({
+      status: 200,
+      success: true,
+      message: "Password reset successful",
+    });
+    
+  } catch (error: any) {
+    console.error("Password reset error:", error);
+    return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+      status: 500,
+      success: false,
+      message: "Internal Server Error",
+      error: error?.message,
+    });
+  }
+}
+
 
   static async EditProfile(req: AuthenticatedRequest, res: Response) {
     try {
