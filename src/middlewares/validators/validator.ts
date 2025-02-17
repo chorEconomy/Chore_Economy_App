@@ -63,6 +63,7 @@ const validateAuthInputForKid = (req: Request, res: Response, next: NextFunction
     const errors: string[] = [];
     const sanitizedData = {
         name: req.body.name?.trim() || "",
+        photo: req.body.photo?.trim() || "",
         password: req.body.password?.trim() || "",
     };
 
@@ -80,7 +81,6 @@ const validateAuthInputForKid = (req: Request, res: Response, next: NextFunction
         res.status(status_codes.HTTP_400_BAD_REQUEST).json({ status: 400, errors });
     }
 };
-
 
 
 

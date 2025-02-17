@@ -633,7 +633,12 @@ static async ResetPassword(req: Request, res: Response) {
 
       // Upload image if provided
       let imageUrl: string | null = null;
-      if (req.file) {
+
+      if (req.body.photo) {
+        // User selected an avatar from predefined options
+        imageUrl = req.body.photo;
+      } else if (req.file) {
+        // User uploaded a photo (from gallery or camera)
         const result = await uploadSingleFile(req.file);
         imageUrl = result?.secure_url || null;
       }
