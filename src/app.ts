@@ -33,8 +33,13 @@ app.use("/api/v1/expenses", expenseRouter)
 
 // Controlling when a user try to hit on any undefined route or path....
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
-  const error = new HttpException(status_codes.HTTP_404_NOT_FOUND, `Can't find ${req.originalUrl} on the server!`)
-  next(error)
+  // const error = new HttpException(status_codes.HTTP_404_NOT_FOUND, `Can't find ${req.originalUrl} on the server!`)
+  // next(error)
+  return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+    status: 500,
+    success: false,
+    message: `Can't find ${req.originalUrl} on the server!`
+  })
 });
 
 app.use(globalErrorHandler);

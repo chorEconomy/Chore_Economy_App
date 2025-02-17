@@ -52,6 +52,14 @@ static async resetPassword(req: Request, res: Response, next: NextFunction) {
   static async loginKid(req: Request, res: Response, next: NextFunction) { 
   return AuthService.LoginKid(req, res);
   }
+  
+  static async fetchParent(req: Request, res: Response, next: NextFunction) { 
+  return AuthService.FetchParent(req, res);
+  }
+  
+  static async fetchKid(req: Request, res: Response, next: NextFunction) { 
+  return AuthService.FetchKid(req, res);
+  }
  
   static async deleteKidProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) { 
   return AuthService.DeleteKidProfile(req, res);

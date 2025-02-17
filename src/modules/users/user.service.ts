@@ -805,6 +805,72 @@ static async ResetPassword(req: Request, res: Response) {
       });
     }
   }
+
+  static async FetchParent(req: Request, res: Response) {
+    try {
+       if (!req.params) {
+          return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: "Please provide a valid Id"})
+      }
+      
+      const {id} = req.params
+
+      const user = await User.findById(id)
+
+      if (!user) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: "Parent's profile not found"})
+      }
+
+      return res.status(status_codes.HTTP_200_OK).json({
+        status: 200,
+        data: {
+          ...user.toObject(),
+          password: undefined
+        }
+      })
+
+    } catch (error: any) {
+      console.error("Fetching parent error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+        error: error?.message
+      });
+    }
+  }
+
+  static async FetchKid(req: Request, res: Response) {
+    try {
+       if (!req.params) {
+          return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: "Please provide a valid Id"})
+      }
+      
+      const {id} = req.params
+
+      const user = await Kid.findById(id)
+
+      if (!user) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: "Kid's profile not found"})
+      }
+
+      return res.status(status_codes.HTTP_200_OK).json({
+        status: 200,
+        data: {
+          ...user.toObject(),
+          password: undefined
+        }
+      })
+
+    } catch (error: any) {
+      console.error("Fetching kid error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+        error: error?.message
+      });
+    }
+  }
 }
 
 export default AuthService;
