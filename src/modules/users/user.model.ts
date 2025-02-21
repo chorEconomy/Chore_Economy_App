@@ -62,6 +62,7 @@ const userSchema: Schema = new Schema<IUser>(
 userSchema.index({ email: 1});  // 1 for ascending order (use -1 for descending)
 userSchema.index({ role: 1 }); 
 userSchema.index({ email: 1, role: 1 });
+userSchema.index({_id: 1})
 
 const kidSchema = new Schema<IKid>(
   {
@@ -75,7 +76,8 @@ const kidSchema = new Schema<IKid>(
   { timestamps: true }
 );
 
-kidSchema.index({name: 1})
+kidSchema.index({ name: 1 })
+kidSchema.index({_id: 1})
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
