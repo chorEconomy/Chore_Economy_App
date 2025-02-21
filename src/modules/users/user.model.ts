@@ -58,6 +58,11 @@ const userSchema: Schema = new Schema<IUser>(
   { timestamps: true } // Automatic management of `createdAt` and `updatedAt`
 );
 
+// Create an index on the `email` field
+userSchema.index({ email: 1});  // 1 for ascending order (use -1 for descending)
+userSchema.index({ role: 1 }); 
+userSchema.index({ email: 1, role: 1 });
+
 const kidSchema = new Schema<IKid>(
   {
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Links the child to a parent
@@ -70,6 +75,7 @@ const kidSchema = new Schema<IKid>(
   { timestamps: true }
 );
 
+kidSchema.index({name: 1})
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {

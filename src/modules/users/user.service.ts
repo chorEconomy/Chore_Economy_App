@@ -333,7 +333,6 @@ class AuthService {
       }
 
       const user = await getUserByEmailAndRole(req.body.email, role);
-      console.log(user.password);
       
 
       if (!user) {
@@ -348,7 +347,6 @@ class AuthService {
         req.body.password,
         user.password
       ); 
-      console.log(isPasswordValid);
       
       if (!isPasswordValid) {
         return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
@@ -365,6 +363,7 @@ class AuthService {
         refresh_token,
         user: {...user.toObject(), password: undefined}
       });
+      
     } catch (error) {
       console.error("Login error:", error);
       return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({

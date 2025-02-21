@@ -30,8 +30,7 @@ async function generateTokens(user: any) {
     const refresh_token = jwt.sign({ sub: user._id}, REFRESH_SECRET, { expiresIn: "7d" });
 
     // Update the user's last login time
-    user.lastLogin = new Date();
-    await user.save();
+    await user.updateOne({ lastLogin: new Date() });
 
     await storeRefreshToken(user._id, refresh_token) 
     
