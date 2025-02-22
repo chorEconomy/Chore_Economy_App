@@ -6,6 +6,7 @@ import AuthenticatedRequest from "../../models/AuthenticatedUser";
 import { Kid, User } from "../users/user.model";
 import { EChoreStatus, EStatus } from "../../models/enums";
 import sendNotification from "../../utils/notifications";
+import paginate from "../../utils/paginate";
 
 class ChoreService {
   static async createChore(req: AuthenticatedRequest, res: Response) {
@@ -91,7 +92,10 @@ class ChoreService {
           return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
       }
 
-      const chores = await Chore.find();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const paginatedData = await paginate(Chore, page, limit)
 
       return res
         .status(status_codes.HTTP_200_OK)
@@ -99,7 +103,7 @@ class ChoreService {
           status: 200,
           success: true,
           message: "Chores retrieved successfully",
-          data: chores
+          data: paginatedData
         });
       
     } catch (error: any) {
@@ -131,8 +135,10 @@ class ChoreService {
           return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
       }
 
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 10
 
-      const inProgressChores = await Chore.find({status: EChoreStatus.InProgress})
+      const paginatedData = await paginate(Chore, page, limit, "", { status: EChoreStatus.InProgress })
 
       return res
         .status(status_codes.HTTP_200_OK)
@@ -140,7 +146,7 @@ class ChoreService {
           status: 200,
           success: true,
           message: "In-Progress chores retrieved successfully",
-          data: inProgressChores,
+          data: paginatedData,
         });
       
     } catch (error: any) {
@@ -166,11 +172,15 @@ class ChoreService {
 
       const parentId = req.user;
       const existingParent = await User.findById({ _id: parentId })
+
       if (!existingParent) {
           return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
       }
 
-      const completedChores = await Chore.find({status: EChoreStatus.Completed}).populate("kidId")
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 10
+
+      const paginatedData = await paginate(Chore, page, limit, "kidId", { status: EChoreStatus.Completed })
 
       return res
         .status(status_codes.HTTP_200_OK)
@@ -178,7 +188,7 @@ class ChoreService {
           status: 200,
           success: true,
           message: "Completed chores retrieved successfully",
-          data: completedChores,
+          data: paginatedData,
         });
       
     } catch (error: any) {
@@ -208,7 +218,10 @@ class ChoreService {
           return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
       }
 
-      const unclaimedChores = await Chore.find({status: EChoreStatus.Unclaimed})
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 10
+
+      const paginatedData = await paginate(Chore, page, limit, "", { status: EChoreStatus.Unclaimed })
 
       return res
         .status(status_codes.HTTP_200_OK)
@@ -216,11 +229,11 @@ class ChoreService {
           status: 200,
           success: true,
           message: "Unclaimed chores retrieved successfully",
-          data: unclaimedChores
+          data: paginatedData
         });
       
     } catch (error: any) {
-      console.error("Chore creation error:", error);
+      console.error("fetchUnclaimedChores error:", error);
       return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
         status: 500,
         success: false,
@@ -384,14 +397,19 @@ class ChoreService {
               message: "Unauthorized access",
           });
       }
-      const chores = await Chore.find({ kidId: kidId })
+
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 10
+
+      const paginatedData = await paginate(Chore, page, limit, "", { kidId: kidId })
+
       
       return res
       .status(status_codes.HTTP_200_OK)
       .json({
         status: 200,
         success: true,
-        data: chores,
+        data: paginatedData,
         message: "Kid's chores retrieved successfully",
       });
 
@@ -544,23 +562,25 @@ class ChoreService {
                 success: false,
                 message: "Kid not found",
             });
-        }
+      }
+      
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 10
 
-        // Fetch rejected chores
-        const rejectedChores = await Chore.find({
-            kidId: kidId,
-            status: EChoreStatus.Rejected,
-        });
+      const paginatedData = await paginate(Chore, page, limit, "", {
+        kidId: kidId,
+        status: EChoreStatus.Rejected,
+    })
 
         return res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,
             message: "Rejected chores retrieved successfully",
-            data: rejectedChores,
+            data: paginatedData,
         });
 
     } catch (error: any) {
-        console.error("Chore fetching error:", error);
+        console.error("Rejected chore fetching error:", error);
         return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
             status: 500,
             success: false,

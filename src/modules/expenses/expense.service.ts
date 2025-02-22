@@ -6,6 +6,7 @@ import AuthenticatedRequest from "../../models/AuthenticatedUser";
 import { User } from "../users/user.model";
 import { ExpenseStatus } from "../../models/enums";
 import { log } from "node:console";
+import paginate from "../../utils/paginate";
 
 class ExpenseService {
   static async createExpense(req: AuthenticatedRequest, res: Response) {
@@ -87,7 +88,11 @@ class ExpenseService {
         });
       }
 
-      const expenses = await Expense.find();
+
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 10
+
+      const paginatedData = await paginate(Expense, page, limit, "", {})
 
       return res
         .status(status_codes.HTTP_200_OK)
@@ -95,7 +100,7 @@ class ExpenseService {
           status: 200,
           success: true,
           message: "Expenses retrieved successfully",
-          data: expenses
+          data: paginatedData
         });
       
     } catch (error: any) {
@@ -186,15 +191,19 @@ class ExpenseService {
         });
       }
 
-      const paidExpenses = await Expense.find({ status: ExpenseStatus.Paid });
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 10
+
+      const paginatedData = await paginate(Expense, page, limit, "", { status: ExpenseStatus.Paid })
+
 
       return res
       .status(status_codes.HTTP_200_OK)
       .json({
         status: 200,
         success: true,
-        data: paidExpenses,
         message: "Paid expenses retrieved successfully",
+        data: paginatedData
       });
 
     } catch (error: any) {
@@ -207,6 +216,7 @@ class ExpenseService {
       });
     }
   }
+  
   static async fetchUnpaidExpenses(req: AuthenticatedRequest, res: Response) {
     try {
       if (!req.user) {
@@ -229,7 +239,10 @@ class ExpenseService {
         });
       }
 
-      const unpaidExpenses = await Expense.find({ status: ExpenseStatus.Unpaid })
+      const page = parseInt(req.query.page as string) || 1
+      const limit = parseInt(req.query.limit as string) || 10
+
+      const paginatedData = await paginate(Expense, page, limit, "", { status: ExpenseStatus.Unpaid })
 
       return res
       .status(status_codes.HTTP_200_OK)
@@ -237,7 +250,7 @@ class ExpenseService {
         status: 200,
         success: true,
         message: "Unpaid expenses retrieved successfully",
-        data: unpaidExpenses
+        data: paginatedData
       });
     } catch (error: any) {
       console.error("fetchPaidExpenses error:", error);
