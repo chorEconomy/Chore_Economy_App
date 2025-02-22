@@ -1,6 +1,8 @@
 import admin from "firebase-admin"
-const serviceAccount = require("fcm-notification.json")
+import * as dotenv from "dotenv";
+dotenv.config();
 
+const serviceAccount: any = process.env.FCM_CREDENTIALS;
 
 
 admin.initializeApp({

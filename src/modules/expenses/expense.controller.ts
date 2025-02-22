@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import ExpenseService from "./expense.service";
-import { RequestUser } from "../../models/RequestUser";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
 
 

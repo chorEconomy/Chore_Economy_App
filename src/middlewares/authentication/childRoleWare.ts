@@ -2,10 +2,10 @@ const jwt = require('jsonwebtoken');
 import { NextFunction, Request, Response } from "express";
 import status_codes from "../../utils/status_constants";
 import { ERole } from "../../models/enums";
-import { RequestUser } from "../../models/RequestUser";
 import { check_if_user_or_kid_exists } from "../../utils/check_user_exists.utils";
+import AuthenticatedRequest from "../../models/AuthenticatedUser";
 
-const authorizeKid = async (req: RequestUser, res: Response, next: NextFunction) => {
+const authorizeKid = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const secret = process.env.ACCESS_SECRET;
     
     if (!secret) {

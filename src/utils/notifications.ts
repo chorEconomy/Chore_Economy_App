@@ -16,8 +16,9 @@ const sendNotification = async (token: string, title: string, body: string) => {
         };
     
         await fcm.send(message);
-        
+
         console.log('Notification sent successfully!');
+        
       } catch (error) {
         console.error('Error sending notification:', error);
       }

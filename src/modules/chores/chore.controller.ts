@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import ChoreService from "./chore.services";
-import { RequestUser } from "../../models/RequestUser";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
 
 
