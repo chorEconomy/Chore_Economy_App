@@ -22,6 +22,7 @@ authRouter.get("/kid/profile/:id", UserController.fetchKid)
 authRouter.put("/parent/update", upload.single("profile-image"), authorizeParent, UserController.editProfile)
 authRouter.post("/parent/kids", upload.single("profile-image"), authorizeParent, validateAuthInputForKid, UserController.createKidProfile)
 authRouter.delete("/parent/kids/:id", authorizeParent, UserController.deleteKidProfile)
+authRouter.delete("/parent", authorizeParent, UserController.deleteParentProfile)
 authRouter.post("/kids/login", UserController.loginKid)
 
 export default authRouter

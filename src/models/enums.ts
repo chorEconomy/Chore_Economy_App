@@ -18,6 +18,8 @@ export enum EStatus {
 export enum EChoreStatus {
   Completed = "completed",
   InProgress = "inprogress",
+  Pending = "pending",
+  Rejected = "rejected",
   Unclaimed = "unclaimed"
 }
 

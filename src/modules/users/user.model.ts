@@ -14,6 +14,7 @@ export interface IUser extends Document {
   password: string;
   isVerified: boolean;
   gender: EGender;
+  fcmToken: string
   photo: string | null;
   phoneNumber: string;
   role: ERole;
@@ -31,6 +32,8 @@ interface IKid extends Document {
   name: string;
   password: string;
   role: ERole;
+  earnings: number;
+  fcmToken: string;
   photo?: string; // Optional field
   status: EStatus;
   createdAt: Date;
@@ -48,6 +51,7 @@ const userSchema: Schema = new Schema<IUser>(
     photo: { type: String, default: null },
     phoneNumber: { type: String, required: [true, 'Phone number is a required field'], unique: true },
     isVerified: { type: Boolean, default: false },
+    fcmToken: {type: String, default: null},
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     lastLogin: {type: Date, default: Date.now},
@@ -66,7 +70,9 @@ const kidSchema = new Schema<IKid>(
     name: { type: String, required: true, trim: true },
     password: { type: String, required: true },
     photo: { type: String, default: null },
-    role: { type: String, enum: Object.values(ERole), default: ERole.Kid},
+    role: { type: String, enum: Object.values(ERole), default: ERole.Kid },
+    fcmToken: {type: String, default: null},
+    earnings: {type: Number, default: 0},
     status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active},
   },
   { timestamps: true }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "722161271313",
+    "project_id": "chor-61f02",
+    "storage_bucket": "chor-61f02.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:722161271313:android:a9d6a0ebc3b2df731427b0",
+        "android_client_info": {
+          "package_name": "com.chor.chor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSadxa8b0QwIOb11UrbspvWhl6m7--Wmw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

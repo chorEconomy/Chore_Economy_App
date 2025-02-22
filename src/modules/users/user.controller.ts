@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import AuthService from "./user.service";
-import { RequestUser } from "../../models/RequestUser";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
  
 
@@ -19,7 +18,7 @@ static async resendOTP(req: Request, res: Response, next: NextFunction) {
 }
 
   
-static async logout(req: RequestUser, res: Response, next: NextFunction) {
+static async logout(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     return AuthService.Logout(req, res)
 }
 
@@ -63,6 +62,10 @@ static async resetPassword(req: Request, res: Response, next: NextFunction) {
  
   static async deleteKidProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) { 
   return AuthService.DeleteKidProfile(req, res);
+  }
+ 
+  static async deleteParentProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) { 
+  return AuthService.DeleteParent(req, res);
   }
 }
 

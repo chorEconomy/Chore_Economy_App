@@ -28,10 +28,29 @@ class ChoreController {
     static async fetchChore(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         return ChoreService.fetchChore(req, res);
     }
+    static async completeChore(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+        return ChoreService.completeChore(req, res);
+    }
 
     static async approveChoreReward(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         return ChoreService.approveChoreReward(req, res);
     }
+   
+    static async takeChore(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+        return ChoreService.takeChore(req, res);
+    }
+   
+    static async denyChore(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+        return ChoreService.denyChore(req, res);
+    }
+
+    static async fetchAllChoresForKid(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+        return ChoreService.fetchAllChoresForKid(req, res);
+    }
+    static async fetchRejectedChores(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+        return ChoreService.fetchRejectedChores(req, res);
+    }
+
 }
 
 export default ChoreController

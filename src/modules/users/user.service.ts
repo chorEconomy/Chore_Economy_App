@@ -316,66 +316,74 @@ class AuthService {
   static async Login(req: Request, res: Response) {
     try {
       if (!req.body) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
+        return res.status(422).json({
           success: false,
           message: "Unprocessable request body",
         });
       }
-
+  
       const role = req.query.role as string;
       if (!role) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
+        return res.status(400).json({
           success: false,
           message: "Please provide a valid user's role",
         });
       }
-
+  
       const user = await getUserByEmailAndRole(req.body.email, role);
       
-
       if (!user) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
+        return res.status(400).json({
           success: false,
           message: "Invalid credentials!",
         });
       }
-
-      const isPasswordValid = await comparePassword(
-        req.body.password,
-        user.password
-      ); 
-      
+  
+      const isPasswordValid = await comparePassword(req.body.password, user.password);
       if (!isPasswordValid) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
+        return res.status(400).json({
           success: false,
           message: "Invalid credentials!",
         });
       }
+ 
+        // **Ensure only one login per device**
+        if (user.fcmToken) {
+          user.fcmToken = null; // Remove old FCM token
+          await user.save();
+        }
+  
+  
+      // **Generate new tokens**
       const { access_token, refresh_token } = await generateTokens(user);
-
-      return res.status(status_codes.HTTP_200_OK).json({
+  
+      user.fcmToken = req.body.fcmToken;
+      await user.save();
+  
+      return res.status(200).json({
         success: true,
         access_token,
         refresh_token,
-        user: {...user.toObject(), password: undefined}
+        user: { ...user.toObject(), password: undefined },
       });
-      
+  
     } catch (error) {
       console.error("Login error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
+      return res.status(500).json({
         success: false,
         message: "An error occurred during login",
       });
     }
   }
+  
 
-  static async Logout(req: Request, res: Response) {
+  static async Logout(req: AuthenticatedRequest, res: Response) {
     try {
+      const user = await check_if_user_or_kid_exists(req.user)
+      if (!user) {
+        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({status: 401, message: "Unauthorized access"})
+      }
+
       const { refresh_token } = req.body;
 
       if (!refresh_token) {
@@ -393,6 +401,10 @@ class AuthService {
           .status(404)
           .json({ status: 404, message: "Refresh token not found" });
       }
+
+      user.fcmToken = null
+
+      await user.save()
 
       return res
         .status(200)
@@ -548,7 +560,7 @@ static async ResetPassword(req: Request, res: Response) {
            const result = await uploadSingleFile(req.file);
            imageUrl = result?.secure_url || existingParent.photo;
          }
-      
+       
         existingParent.firstName = first_name ?? existingParent.firstName;
         existingParent.lastName = last_name ?? existingParent.lastName;
         existingParent.photo = imageUrl;
@@ -745,31 +757,26 @@ static async ResetPassword(req: Request, res: Response) {
 
   static async LoginKid(req: Request, res: Response) {
     try {
-      
       if (!req.body) {
-      return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-        status: 422,
-        success: false,
-        message: "Unprocessable request body",
-      });
+        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
+          status: 422,
+          success: false,
+          message: "Unprocessable request body",
+        });
       }
-      
-      const { name } = req.body
-      
 
-    const role = req.query.role as string;
-    if (!role) {
-      return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-        status: 400,
-        success: false,
-        message: "Please provide a valid user's role",
-      });
-    }
-      
-      const kid = await getKidByNameAndRole(name, role)
-      console.log(kid);
-      
-     
+      const { name, password, fcmToken } = req.body; // Accept FCM token
+      const role = req.query.role as string;
+
+      if (!name || !password || !role || !fcmToken) {
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+          status: 400,
+          success: false,
+          message: "Name, password, role, and FCM token are required",
+        });
+      }
+
+      const kid = await getKidByNameAndRole(name, role);
       if (!kid) {
         return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
           status: 400,
@@ -778,11 +785,8 @@ static async ResetPassword(req: Request, res: Response) {
         });
       }
 
-      const isPasswordValid = await comparePassword(
-        req.body.password,
-        kid.password
-      );
-
+      // Validate password
+      const isPasswordValid = await comparePassword(password, kid.password);
       if (!isPasswordValid) {
         return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
           status: 400,
@@ -790,7 +794,19 @@ static async ResetPassword(req: Request, res: Response) {
           message: "Invalid credentials!",
         });
       }
+
+      // **Ensure only one login per device**
+      if (kid.fcmToken) {
+        kid.fcmToken = null; // Remove old FCM token
+        await kid.save();
+      }
+      kid.fcmToken = fcmToken; // Save new FCM token
+      await kid.save();
+
+      // Generate new tokens
       const { access_token, refresh_token } = await generateTokens(kid);
+
+
 
       return res.status(status_codes.HTTP_200_OK).json({
         success: true,
@@ -805,7 +821,7 @@ static async ResetPassword(req: Request, res: Response) {
         status: 500,
         success: false,
         message: "Internal Server Error",
-        error: error?.message
+        error: error?.message,
       });
     }
   }
@@ -875,6 +891,50 @@ static async ResetPassword(req: Request, res: Response) {
       });
     }
   }
+
+  static async DeleteParent(req: AuthenticatedRequest, res: Response) {
+    try {
+        if (!req.user) {
+            return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+                status: 401,
+                success: false,
+                message: "Unauthorized access",
+            });
+        }
+        const id = req.user;
+
+        // Find parent first
+        const existingParent = await User.findById(id);
+        if (!existingParent) {
+            return res.status(status_codes.HTTP_404_NOT_FOUND).json({
+                status: 404,
+                success: false,
+                message: `Parent with ID: ${id} not found`,
+            });
+        }
+
+        // Delete parent and their children in parallel
+        await Promise.all([
+            User.findByIdAndDelete(id),
+            Kid.deleteMany({ parentId: id })
+        ]);
+
+        return res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            message: "Parent and associated kids deleted successfully",
+        });
+    } catch (error: any) {
+        console.error("Error deleting parent:", error);
+        return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+            status: 500,
+            success: false,
+            message: "Internal Server Error",
+            error: error.message,
+        });
+    }
+}
+
 }
 
 export default AuthService;
