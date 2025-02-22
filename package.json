@@ -28,7 +28,7 @@
   "main": "app.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon ./src/server.ts"
+    "dev": "NODE_OPTIONS='--max-old-space-size=512' nodemon ./src/server.ts"
   },
   "author": "",
   "license": "ISC",
