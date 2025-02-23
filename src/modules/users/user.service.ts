@@ -26,6 +26,7 @@ import comparePassword from "../../utils/compare_password";
 import CustomRequest from "../../models/CustomRequest";
 import { uploadSingleFile } from "../../utils/file_upload.utils";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
+import sendNotification from "../../utils/notifications";
 const bcrypt = require("bcrypt");
 
 class AuthService {
@@ -802,6 +803,8 @@ static async ResetPassword(req: Request, res: Response) {
       }
       kid.fcmToken = fcmToken; // Save new FCM token
       await kid.save();
+
+      await sendNotification(kid.fcmToken, "Login successfully", "You've been logged in successfully")
 
       // Generate new tokens
       const { access_token, refresh_token } = await generateTokens(kid);

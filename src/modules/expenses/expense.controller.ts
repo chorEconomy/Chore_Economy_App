@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import ExpenseService from "./expense.service";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
-
+const asyncHandler = require("express-async-handler")
 
 class ExpenseController {
+  
     static async createExpense(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         return ExpenseService.createExpense(req, res)
     }
