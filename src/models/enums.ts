@@ -27,3 +27,9 @@ export enum ExpenseStatus {
   Paid = "paid",
   Unpaid = "unpaid"
 }
+
+export enum ESavingSchedule {
+  Weekly = "weekly",
+  BiWeekly = "bi-weekly",
+  Monthly = "monthly"
+} 

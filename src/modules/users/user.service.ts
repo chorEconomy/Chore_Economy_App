@@ -151,7 +151,6 @@ class AuthService {
 
         await user.save();
 
-        // Send welcome email only if the user is verifying their email for the first time
         if (isFirstTimeVerification) {
             await sendWelcomeEmail(user.firstName, user.email);
         }
@@ -804,12 +803,8 @@ static async ResetPassword(req: Request, res: Response) {
       kid.fcmToken = fcmToken; // Save new FCM token
       await kid.save();
 
-      await sendNotification(kid.fcmToken, "Login successfully", "You've been logged in successfully")
-
       // Generate new tokens
       const { access_token, refresh_token } = await generateTokens(kid);
-
-
 
       return res.status(status_codes.HTTP_200_OK).json({
         success: true,
@@ -895,6 +890,36 @@ static async ResetPassword(req: Request, res: Response) {
     }
   }
 
+  static async FetchKidsForSingleParent(req: AuthenticatedRequest, res: Response) {
+    try {
+      const parent = await User.findById(req.user)
+      
+      if (!parent) {
+        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({status: 401, success: false, message: "Unauthorized access!"})
+      }
+
+      const kids = await Kid.find({parentId: parent._id})
+
+      if (!kids || kids.length == 0) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: "Kids' profiles not found"})
+      }
+      return res.status(status_codes.HTTP_200_OK).json({
+        status: 200,
+        success: true,
+        data: kids
+      })
+
+    } catch (error: any) {
+      console.error("Fetching kid error:", error);
+      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+        status: 500,
+        success: false,
+        message: "Internal Server Error",
+        error: error?.message
+      });
+    }
+  }
+
   static async DeleteParent(req: AuthenticatedRequest, res: Response) {
     try {
         if (!req.user) {
@@ -936,8 +961,30 @@ static async ResetPassword(req: Request, res: Response) {
             error: error.message,
         });
     }
-}
+  }
+  
 
+  static async SignUpAdmin(fullName: string, email: string, password: string) {
+    
+  }
+
+  static async FetchTotalNumberOfUsers() {
+    const totalParents = await this.FetchTotalNumberOfParents()
+    const totalKids = await this.FetchTotalNumberOfKids()
+
+    const totalUsers = totalParents + totalKids
+    return totalUsers
+  }
+  
+  static async FetchTotalNumberOfParents() {
+    const totalParents = await User.countDocuments({ role: ERole.Parent })
+    return totalParents
+  }
+ 
+  static async FetchTotalNumberOfKids() {
+    const totalKids = await Kid.countDocuments()
+    return totalKids
+  }
 }
 
 export default AuthService;

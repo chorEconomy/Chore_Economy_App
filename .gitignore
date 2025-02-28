@@ -1,3 +1,4 @@
 node_modules/
 .env
 fcm-notification.json
+notitificaion.message.ts

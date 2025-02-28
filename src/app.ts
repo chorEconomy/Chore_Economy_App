@@ -8,14 +8,14 @@ import HttpException from "./models/HttpException"
 const cors = require("cors"); 
 import status_codes  from "./utils/status_constants"; 
 import normalizeError from "./utils/normalize_error";
-import globalErrorHandler from "./middlewares/globalErrorHandler";
+// import globalErrorHandler from "./middlewares/globalErrorHandler";
+import savingsRouter from "./modules/savings/saving.routes";
 
 const app = express();
 
 //==================MIDDLEWARES=================
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
-
 
 
 
@@ -30,6 +30,7 @@ app.get("/api/v1/home", (req: Request, res: Response) => {
 app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/chores", choreRouter)
 app.use("/api/v1/expenses", expenseRouter)
+app.use("/api/v1/savings", savingsRouter)
 
 // Controlling when a user try to hit on any undefined route or path....
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
@@ -42,6 +43,6 @@ app.use("*", (req: Request, res: Response, next: NextFunction) => {
   })
 });
 
-app.use(globalErrorHandler);
+// app.use(globalErrorHandler);
 
 export default app

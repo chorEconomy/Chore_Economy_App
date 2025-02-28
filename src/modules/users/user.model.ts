@@ -55,18 +55,18 @@ const userSchema: Schema = new Schema<IUser>(
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     lastLogin: {type: Date, default: Date.now},
-    role: { type: String, enum: Object.values(ERole)}, //Parent or Admin
+    role: { type: String, enum: Object.values(ERole)},
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
     status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active},
   },
-  { timestamps: true } // Automatic management of `createdAt` and `updatedAt`
+  { timestamps: true }
 );
 
 userSchema.index({ role: 1 });  
 
 const kidSchema = new Schema<IKid>(
   {
-    parentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Links the child to a parent
+    parentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },  
     name: { type: String, required: true, trim: true },
     password: { type: String, required: true },
     photo: { type: String, default: null },

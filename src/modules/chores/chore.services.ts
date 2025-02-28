@@ -4,9 +4,10 @@ import { Chore } from "./chore.model";
 import status_codes from "../../utils/status_constants";
 import AuthenticatedRequest from "../../models/AuthenticatedUser";
 import { Kid, User } from "../users/user.model";
-import { EChoreStatus, EStatus } from "../../models/enums";
+import { EChoreStatus, ERole, EStatus } from "../../models/enums";
 import sendNotification from "../../utils/notifications";
 import paginate from "../../utils/paginate";
+import toTitleCase from "../../utils/string_formatter";
 
 class ChoreService {
   static async createChore(req: AuthenticatedRequest, res: Response) {
@@ -74,173 +75,22 @@ class ChoreService {
     }
   }
 
-  static async fetchAllChores(req: AuthenticatedRequest, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-          status: 401,
-          success: false,
-          message: "Unauthorized access",
-        });
-      }
-
-      const parentId = req.user;
-
-      const existingParent = await User.findById({ _id: parentId })
-
-      if (!existingParent) {
-          return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
-      }
-
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-
-      const paginatedData = await paginate(Chore, page, limit)
-
-      return res
-        .status(status_codes.HTTP_200_OK)
-        .json({
-          status: 200,
-          success: true,
-          message: "Chores retrieved successfully",
-          data: paginatedData
-        });
-      
-    } catch (error: any) {
-      console.error("Chore creation error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "Internal server error",
-        error: error?.message,
-      });
-    }
+  static async fetchAllChoresFromDB(user: any, page: number, limit: number) {
+    return this.fetchChoresByStatusFromDB(user, "", page, limit)
   }
 
-  static async fetchInprogressChores(req: AuthenticatedRequest, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-          status: 401,
-          success: false,
-          message: "Unauthorized access",
-        });
-      }
-
-      const parentId = req.user;
-
-      const existingParent = await User.findById({ _id: parentId })
-      
-      if (!existingParent) {
-          return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
-      }
-
-      const page = parseInt(req.query.page as string) || 1
-      const limit = parseInt(req.query.limit as string) || 10
-
-      const paginatedData = await paginate(Chore, page, limit, "", { status: EChoreStatus.InProgress })
-
-      return res
-        .status(status_codes.HTTP_200_OK)
-        .json({
-          status: 200,
-          success: true,
-          message: "In-Progress chores retrieved successfully",
-          data: paginatedData,
-        });
-      
-    } catch (error: any) {
-      console.error("Chore creation error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "Internal server error",
-        error: error?.message,
-      });
+  static async fetchChoresByStatusFromDB(user: any, status: string, page: number, limit: number) {
+    const filter: any = { status: status }
+    
+    if (user.role === ERole.Parent) {
+      filter.parentId = user._id
+    }  else if (user.role === ERole.Kid) {
+      filter.kidId = user._id
+    } else {
+      throw new Error("Invalid Role")
     }
-  }
 
-  static async fetchCompletedChores(req: AuthenticatedRequest, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-          status: 401,
-          success: false,
-          message: "Unauthorized access",
-        });
-      }
-
-      const parentId = req.user;
-      const existingParent = await User.findById({ _id: parentId })
-
-      if (!existingParent) {
-          return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
-      }
-
-      const page = parseInt(req.query.page as string) || 1
-      const limit = parseInt(req.query.limit as string) || 10
-
-      const paginatedData = await paginate(Chore, page, limit, "kidId", { status: EChoreStatus.Completed })
-
-      return res
-        .status(status_codes.HTTP_200_OK)
-        .json({
-          status: 200,
-          success: true,
-          message: "Completed chores retrieved successfully",
-          data: paginatedData,
-        });
-      
-    } catch (error: any) {
-      console.error("Chore creation error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "Internal server error",
-        error: error?.message,
-      });
-    }
-  }
-
-  static async fetchUnclaimedChores(req: AuthenticatedRequest, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-          status: 401,
-          success: false,
-          message: "Unauthorized access",
-        });
-      }
-
-      const parentId = req.user;
-      const existingParent = await User.findById({ _id: parentId })
-      if (!existingParent) {
-          return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
-      }
-
-      const page = parseInt(req.query.page as string) || 1
-      const limit = parseInt(req.query.limit as string) || 10
-
-      const paginatedData = await paginate(Chore, page, limit, "", { status: EChoreStatus.Unclaimed })
-
-      return res
-        .status(status_codes.HTTP_200_OK)
-        .json({
-          status: 200,
-          success: true,
-          message: "Unclaimed chores retrieved successfully",
-          data: paginatedData
-        });
-      
-    } catch (error: any) {
-      console.error("fetchUnclaimedChores error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "Internal server error",
-        error: error?.message,
-      });
-    }
+    return await paginate(Chore, page, limit, "", filter)
   }
 
   static async fetchChore(req: AuthenticatedRequest, res: Response) {
@@ -265,7 +115,7 @@ class ChoreService {
           return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
       }
  
-      const existingChore = await Chore.findById(id)
+      const existingChore = await Chore.findOne({_id: id, parentId: parentId})
 
       if (!existingChore) {
         return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, messgae: `Chore with this id: ${id} not found!`})
@@ -313,15 +163,27 @@ class ChoreService {
           return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
       }
    
-      const existingChore = await Chore.findById({ _id: id })
+      const existingChore = await Chore.findOne({ _id: id, parentId: parentId})
 
       if (!existingChore) {
         return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, messgae: `Chore with this id: ${id} not found!`})
       }
 
+      if (existingChore.status != EChoreStatus.Pending) {
+        return res.status(status_codes.HTTP_403_FORBIDDEN).json({status: 404, success: false, messgae: `Chore has not been completed yet!`})
+      }
+
+      const kid = await Kid.findById(existingChore.kidId)
+
+      if (!kid) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, messgae: `Kid with this id: ${id} not found!`})
+      }
+
       existingChore.isRewardApproved = true;
       existingChore.status = EChoreStatus.Completed
       existingChore.save()
+
+      await sendNotification(kid.fcmToken,  "Chore Reviewed!", "Your parent has approved your completed chore. Great job!")
 
       return res
         .status(status_codes.HTTP_200_OK)
@@ -345,8 +207,8 @@ class ChoreService {
 
   static async takeChore(req: AuthenticatedRequest, res: Response) {
       try {
-        const kidId = req.user
-        if (!kidId) {
+        const kid = await Kid.findById(req.user)
+        if (!kid) {
             return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
                 status: 401,
                 success: false,
@@ -362,7 +224,7 @@ class ChoreService {
         }
         
         existingChore.status = EChoreStatus.InProgress
-        existingChore.kidId = kidId
+        existingChore.kidId = req.user
 
         await existingChore.save()
 
@@ -386,47 +248,11 @@ class ChoreService {
     }
   }
 
-  static async fetchAllChoresForKid(req: AuthenticatedRequest, res: Response) { 
-    try {
-      
-      const kidId = req.user
-      if (!kidId) {
-          return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-              status: 401,
-              success: false,
-              message: "Unauthorized access",
-          });
-      }
-
-      const page = parseInt(req.query.page as string) || 1
-      const limit = parseInt(req.query.limit as string) || 10
-
-      const paginatedData = await paginate(Chore, page, limit, "", { kidId: kidId })
-
-      
-      return res
-      .status(status_codes.HTTP_200_OK)
-      .json({
-        status: 200,
-        success: true,
-        data: paginatedData,
-        message: "Kid's chores retrieved successfully",
-      });
-
-    } catch (error: any) {
-      console.error("Chore fetching error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "Internal server error",
-        error: error?.message,
-      }); 
-    }
-  }
-
   static async completeChore(req: AuthenticatedRequest, res: Response) {
     try {
-      if (!req.user) {
+      
+      const kid = await Kid.findById(req.user);
+      if (!kid) {
         return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
           status: 401,
           success: false,
@@ -437,13 +263,14 @@ class ChoreService {
       const choreId = req.params.id;
   
       // Find the existing chore
-      const existingChore = await Chore.findById(choreId);
+
+      const existingChore = await Chore.findOne({_id: choreId, kidId: kid._id});
 
       if (!existingChore) {
         return res.status(status_codes.HTTP_404_NOT_FOUND).json({
           status: 404,
           success: false,
-          message: `Chore with this ID: ${choreId} not found!`,
+          message: `Chore not found!`,
         });
       }
 
@@ -465,7 +292,23 @@ class ChoreService {
       // Update chore details
       existingChore.completedPhotos = choreImages;
       existingChore.status = EChoreStatus.Pending;
+
+      const currentDate = new Date()
+      const formattedDate = `${currentDate.getDate()}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
+      existingChore.completedDate = formattedDate;
+
       await existingChore.save();
+
+      const parent = await User.findById(existingChore.parentId)
+      if (!parent) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({
+          status: 404,
+          success: false,
+          message: `Parent with this ID: ${choreId} not found!`,
+        });
+      }
+
+      await sendNotification(parent.fcmToken, kid.name, `${toTitleCase(existingChore.title)}\nCompleted on ${existingChore.completedDate}` )
 
       return res.status(status_codes.HTTP_200_OK).json({
         status: 200,
@@ -484,7 +327,6 @@ class ChoreService {
       });
     }
   }
-  
 
   static async denyChore(req: AuthenticatedRequest, res: Response) {
     try {
@@ -498,7 +340,8 @@ class ChoreService {
       }
       const {id} = req.params
       const { reason } = req.body
-      const chore = await Chore.findById(id)
+
+      const chore = await Chore.findOne({_id: id, parentId: parentId})
 
       if (!chore) {
         return res.status(status_codes.HTTP_404_NOT_FOUND).json({
@@ -519,6 +362,14 @@ class ChoreService {
       chore.denialReason = reason || "No reason provided"
       chore.status = EChoreStatus.Rejected
       await chore.save()
+
+      const kid = await Kid.findById(chore.kidId)
+
+      if (!kid) {
+        return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, messgae: `Kid with this id: ${id} not found!`})
+      }
+
+      await sendNotification(kid.fcmToken,  "Chore Rejected", "Your parent has denied your completed chore. Please review and try again.")
 
       return res.status(status_codes.HTTP_200_OK).json({
         status: 200,
@@ -541,54 +392,293 @@ class ChoreService {
     }
   }
 
-  static async fetchRejectedChores(req: AuthenticatedRequest, res: Response) {
-    try {
-        // Ensure authenticated user exists
-        if (!req.user) {
-            return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-                status: 401,
-                success: false,
-                message: "Unauthorized access",
-            });
-        }
 
-        const kidId = req.user;
 
-        // Check if kid exists
-        const kid = await Kid.findById(kidId);
-        if (!kid) {
-            return res.status(status_codes.HTTP_404_NOT_FOUND).json({
-                status: 404,
-                success: false,
-                message: "Kid not found",
-            });
-      }
+  // static async fetchAllChoresForKid(req: AuthenticatedRequest, res: Response) { 
+  //   try {
       
-      const page = parseInt(req.query.page as string) || 1
-      const limit = parseInt(req.query.limit as string) || 10
+  //     const kidId = req.user
+  //     if (!kidId) {
+  //         return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+  //             status: 401,
+  //             success: false,
+  //             message: "Unauthorized access",
+  //         });
+  //     }
 
-      const paginatedData = await paginate(Chore, page, limit, "", {
-        kidId: kidId,
-        status: EChoreStatus.Rejected,
-    })
+  //     const page = parseInt(req.query.page as string) || 1
+  //     const limit = parseInt(req.query.limit as string) || 10
 
-        return res.status(status_codes.HTTP_200_OK).json({
-            status: 200,
-            success: true,
-            message: "Rejected chores retrieved successfully",
-            data: paginatedData,
-        });
+  //     const paginatedData = await paginate(Chore, page, limit, "", { kidId: kidId })
 
-    } catch (error: any) {
-        console.error("Rejected chore fetching error:", error);
-        return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-            status: 500,
-            success: false,
-            message: "Internal server error",
-            error: error?.message,
-        });
-    }
-}
+      
+  //     return res
+  //     .status(status_codes.HTTP_200_OK)
+  //     .json({
+  //       status: 200,
+  //       success: true,
+  //       data: paginatedData,
+  //       message: "Kid's chores retrieved successfully",
+  //     });
+
+  //   } catch (error: any) {
+  //     console.error("Chore fetching error:", error);
+  //     return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+  //       status: 500,
+  //       success: false,
+  //       message: "Internal server error",
+  //       error: error?.message,
+  //     }); 
+  //   }
+  // }
+
+  // static async fetchInprogressChores(req: AuthenticatedRequest, res: Response) {
+  //   try {
+  //     if (!req.user) {
+  //       return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+  //         status: 401,
+  //         success: false,
+  //         message: "Unauthorized access",
+  //       });
+  //     }
+
+  //     const parentId = req.user;
+
+  //     const existingParent = await User.findById({ _id: parentId })
+      
+  //     if (!existingParent) {
+  //         return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
+  //     }
+
+  //     const page = parseInt(req.query.page as string) || 1
+  //     const limit = parseInt(req.query.limit as string) || 10
+
+  //     const paginatedData = await paginate(Chore, page, limit, "", { status: EChoreStatus.InProgress, parentId: parentId})
+
+  //     return res
+  //       .status(status_codes.HTTP_200_OK)
+  //       .json({
+  //         status: 200,
+  //         success: true,
+  //         message: "In-Progress chores retrieved successfully",
+  //         data: paginatedData,
+  //       });
+      
+  //   } catch (error: any) {
+  //     console.error("Chore creation error:", error);
+  //     return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+  //       status: 500,
+  //       success: false,
+  //       message: "Internal server error",
+  //       error: error?.message,
+  //     });
+  //   }
+  // }
+ 
+  // static async fetchPendingChoresForKid(req: AuthenticatedRequest, res: Response) {
+  //   try {
+  //     const kid = await Kid.findById(req.user)
+
+  //     if (!kid) {
+  //       return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+  //         status: 401,
+  //         success: false,
+  //         message: "Unauthorized access",
+  //       });
+  //     }
+
+  //     const page = parseInt(req.query.page as string) || 1
+  //     const limit = parseInt(req.query.limit as string) || 10
+
+  //     const paginatedData = await paginate(Chore, page, limit, "", { status: EChoreStatus.Pending, kidId: kid._id })
+
+  //     return res
+  //       .status(status_codes.HTTP_200_OK)
+  //       .json({
+  //         status: 200,
+  //         success: true,
+  //         message: "Pending chores retrieved successfully",
+  //         data: paginatedData,
+  //       });
+  //   } catch (error: any) {
+  //     console.error("fetching pending chore error:", error);
+  //     return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+  //       status: 500,
+  //       success: false,
+  //       message: "Internal server error",
+  //       error: error?.message,
+  //     });
+  //   }
+  // }
+
+  // static async fetchCompletedChores(req: AuthenticatedRequest, res: Response) {
+  //   try {
+  //     if (!req.user) {
+  //       return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+  //         status: 401,
+  //         success: false,
+  //         message: "Unauthorized access",
+  //       });
+  //     }
+
+  //     const parentId = req.user;
+  //     const existingParent = await User.findById({ _id: parentId })
+
+  //     if (!existingParent) {
+  //         return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
+  //     }
+
+  //     const page = parseInt(req.query.page as string) || 1
+  //     const limit = parseInt(req.query.limit as string) || 10
+
+  //     const paginatedData = await paginate(Chore, page, limit, "kidId", { status: EChoreStatus.Completed, parentId: parentId})
+
+  //     return res
+  //       .status(status_codes.HTTP_200_OK)
+  //       .json({
+  //         status: 200,
+  //         success: true,
+  //         message: "Completed chores retrieved successfully",
+  //         data: paginatedData,
+  //       });
+      
+  //   } catch (error: any) {
+  //     console.error("Chore creation error:", error);
+  //     return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+  //       status: 500,
+  //       success: false,
+  //       message: "Internal server error",
+  //       error: error?.message,
+  //     });
+  //   }
+  // }
+  
+  // static async fetchCompletedChoresForKid(req: AuthenticatedRequest, res: Response) {
+  //   try {
+  //     const kid = await Kid.findById(req.user)
+  //     if (!kid) {
+  //       return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+  //         status: 401,
+  //         success: false,
+  //         message: "Unauthorized access",
+  //       });
+  //     }
+
+  //     const page = parseInt(req.query.page as string) || 1
+  //     const limit = parseInt(req.query.limit as string) || 10
+
+  //     const paginatedData = await paginate(Chore, page, limit, "kidId", { status: EChoreStatus.Completed, kidId: kid._id })
+
+  //     return res
+  //       .status(status_codes.HTTP_200_OK)
+  //       .json({
+  //         status: 200,
+  //         success: true,
+  //         message: "Completed chores retrieved successfully",
+  //         data: paginatedData,
+  //       });
+      
+  //   } catch (error: any) {
+  //     console.error("Chore creation error:", error);
+  //     return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+  //       status: 500,
+  //       success: false,
+  //       message: "Internal server error",
+  //       error: error?.message,
+  //     });
+  //   }
+  // }
+
+  // static async fetchUnclaimedChores(req: AuthenticatedRequest, res: Response) {
+  //   try {
+  //     if (!req.user) {
+  //       return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+  //         status: 401,
+  //         success: false,
+  //         message: "Unauthorized access",
+  //       });
+  //     }
+
+  //     const parentId = req.user;
+  //     const existingParent = await User.findById({ _id: parentId })
+  //     if (!existingParent) {
+  //         return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, message: `Parent with the id: ${parentId} not found`})
+  //     }
+
+  //     const page = parseInt(req.query.page as string) || 1
+  //     const limit = parseInt(req.query.limit as string) || 10
+
+  //     const paginatedData = await paginate(Chore, page, limit, "", { status: EChoreStatus.Unclaimed, parentId: parentId })
+
+  //     return res
+  //       .status(status_codes.HTTP_200_OK)
+  //       .json({
+  //         status: 200,
+  //         success: true,
+  //         message: "Unclaimed chores retrieved successfully",
+  //         data: paginatedData
+  //       });
+      
+  //   } catch (error: any) {
+  //     console.error("fetchUnclaimedChores error:", error);
+  //     return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+  //       status: 500,
+  //       success: false,
+  //       message: "Internal server error",
+  //       error: error?.message,
+  //     });
+  //   }
+  // }
+
+
+//   static async fetchRejectedChores(req: AuthenticatedRequest, res: Response) {
+//     try {
+//         // Ensure authenticated user exists
+//         if (!req.user) {
+//             return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+//                 status: 401,
+//                 success: false,
+//                 message: "Unauthorized access",
+//             });
+//         }
+
+//         const kidId = req.user;
+
+//         // Check if kid exists
+//         const kid = await Kid.findById(kidId);
+//         if (!kid) {
+//             return res.status(status_codes.HTTP_404_NOT_FOUND).json({
+//                 status: 404,
+//                 success: false,
+//                 message: "Kid not found",
+//             });
+//       }
+      
+//       const page = parseInt(req.query.page as string) || 1
+//       const limit = parseInt(req.query.limit as string) || 10
+
+//       const paginatedData = await paginate(Chore, page, limit, "", {
+//         kidId: kidId,
+//         status: EChoreStatus.Rejected,
+//     })
+
+//         return res.status(status_codes.HTTP_200_OK).json({
+//             status: 200,
+//             success: true,
+//             message: "Rejected chores retrieved successfully",
+//             data: paginatedData,
+//         });
+
+//     } catch (error: any) {
+//         console.error("Rejected chore fetching error:", error);
+//         return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+//             status: 500,
+//             success: false,
+//             message: "Internal server error",
+//             error: error?.message,
+//         });
+//     }
+// }
 }
 
 

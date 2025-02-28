@@ -8,6 +8,7 @@ interface IChore extends Document {
     photo: string
     title: string
     description: string
+    completedDate: String
     earn: number
     denialReason: string
     isRewardApproved: boolean
@@ -25,7 +26,8 @@ const choreSchema: Schema = new Schema<IChore>({
     earn: { type: Number, required: [true, 'Earn is a required field'], default: 0 },
     isRewardApproved: { type: Boolean, default: false },
     denialReason: { type: String, default: null },
-    completedPhotos: {type: [String], default: null},
+    completedPhotos: { type: [String], default: null },
+    completedDate: {type: String, default: null},
     status: { type: String, enum: Object.values(EChoreStatus), required: true, default: EChoreStatus.Unclaimed},
     dueDate: { type: Date, default: null },
 },

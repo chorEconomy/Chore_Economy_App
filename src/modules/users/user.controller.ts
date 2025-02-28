@@ -60,6 +60,10 @@ static async resetPassword(req: Request, res: Response, next: NextFunction) {
   return AuthService.FetchKid(req, res);
   }
  
+  static async fetchKidsForSingleParent(req: AuthenticatedRequest, res: Response, next: NextFunction) { 
+  return AuthService.FetchKidsForSingleParent(req, res);
+  }
+ 
   static async deleteKidProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) { 
   return AuthService.DeleteKidProfile(req, res);
   }
