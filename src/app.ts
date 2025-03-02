@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import authRouter from "./modules/users/user.routes";
 import choreRouter from "./modules/chores/chore.routes";
 import expenseRouter from "./modules/expenses/expense.routes";
+import paymentRouter from "./modules/payments/payment.route";
 import HttpException from "./models/HttpException"
 
 const cors = require("cors"); 
@@ -31,6 +32,7 @@ app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/chores", choreRouter)
 app.use("/api/v1/expenses", expenseRouter)
 app.use("/api/v1/savings", savingsRouter)
+app.use("/api/v1/payments", paymentRouter)
 
 // Controlling when a user try to hit on any undefined route or path....
 app.use("*", (req: Request, res: Response, next: NextFunction) => {

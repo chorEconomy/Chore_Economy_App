@@ -30,6 +30,6 @@ export enum ExpenseStatus {
 
 export enum ESavingSchedule {
   Weekly = "weekly",
-  BiWeekly = "bi-weekly",
+  BiWeekly = "biweekly",
   Monthly = "monthly"
 } 

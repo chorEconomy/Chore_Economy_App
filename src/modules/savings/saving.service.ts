@@ -1,19 +1,25 @@
 import { ESavingSchedule } from "../../models/enums"
+import calculateEndDate from "../../utils/converter.utils";
 import paginate from "../../utils/paginate";
 import { Kid } from "../users/user.model";
 import { Saving } from "./saving.model"
 
 class SavingService {
     static async createSaving(data: any, kidId: any) {
-        const {title, startDate, totalSavingAmount, schedule, amountFrequency} = data
+        const { title, startDate, totalSavingAmount, schedule, amountFrequency } = data
+        
+        const endDate = calculateEndDate(startDate, totalSavingAmount, amountFrequency, schedule)
+
         const saving = await new Saving({
             kidId,
             title,
             startDate,
+            endDate: endDate,
             totalSavingAmount,
             amountFrequency,
             schedule: schedule?.toLowerCase() as ESavingSchedule
         })
+
         await saving.save();
         return saving
     }
