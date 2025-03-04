@@ -1,4 +1,4 @@
-import {Kid, User} from "../modules/users/user.model"
+import { Kid, User } from "../modules/users/user.model.js";
 
 //Find one user in the db with the provided email
 export async function check_if_user_exist_with_email(userEmail: string) {

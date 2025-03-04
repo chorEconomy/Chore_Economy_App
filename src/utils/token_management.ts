@@ -1,5 +1,7 @@
-import RefreshToken from "../modules/users/refresh.token.model";
-const jwt = require('jsonwebtoken');
+import RefreshToken from "../modules/users/refresh.token.model.js";
+import jwt from "jsonwebtoken"
+import * as dotenv from "dotenv";
+dotenv.config()
 
 
 async function storeRefreshToken(userId: string, refreshToken: string) {
@@ -62,7 +64,8 @@ function decode_token(token: string) {
 }
 
 async function verifyRefreshTokenAndIssueNewAccessToken(refreshToken: string) {
-    const REFRESH_SECRET = process.env.REFRESH_SECRET;
+    const REFRESH_SECRET: any = process.env.REFRESH_SECRET;
+    const ACCESS_SECRET: any = process.env.ACCESS_SECRET;
 
     try {
         const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as { sub: string };
@@ -78,7 +81,7 @@ async function verifyRefreshTokenAndIssueNewAccessToken(refreshToken: string) {
         await RefreshToken.deleteOne({ userId: decoded.sub, refreshToken });
 
         // Generate new access and refresh tokens
-        const newAccessToken = jwt.sign({ sub: decoded.sub }, process.env.ACCESS_SECRET, { expiresIn: '15m' });
+        const newAccessToken = jwt.sign({ sub: decoded.sub }, ACCESS_SECRET, { expiresIn: '15m' });
         const newRefreshToken = jwt.sign({ sub: decoded.sub }, REFRESH_SECRET, { expiresIn: '7d' });
 
         // Store the new refresh token in MongoDB

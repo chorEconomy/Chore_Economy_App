@@ -1,12 +1,13 @@
-const express = require("express");
+import express from "express"
 const choreRouter = express.Router();
-import ChoreController from "./chore.controller";
-import authorizeParent from "../../middlewares/authentication/parentRoleWare";
-import upload from "../../config/multer.config";
-import authorizeKid from "../../middlewares/authentication/childRoleWare";
-import authenticateUser from "../../middlewares/authentication/authware";
+import ChoreController from "./chore.controller.js";
+import authorizeParent from "../../middlewares/authentication/parentRoleWare.js";
+import upload from "../../config/multer.config.js";
+import authorizeKid from "../../middlewares/authentication/childRoleWare.js";
+import authenticateUser from "../../middlewares/authentication/authware.js";
 
-choreRouter.post("/", upload.single("chore-image"), authorizeParent, ChoreController.createChore)
+choreRouter.post("/", upload.single("chore-image"), authorizeParent, ChoreController.createChore);
+
 choreRouter.get("/", authenticateUser, ChoreController.fetchAllChores)
 choreRouter.get("", authenticateUser, ChoreController.fetchChoresByStatus)
 choreRouter.get("/:id", authorizeParent, ChoreController.fetchChore)

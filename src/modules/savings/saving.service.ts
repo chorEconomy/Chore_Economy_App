@@ -1,8 +1,8 @@
-import { ESavingSchedule } from "../../models/enums"
-import calculateEndDate from "../../utils/converter.utils";
-import paginate from "../../utils/paginate";
-import { Kid } from "../users/user.model";
-import { Saving } from "./saving.model"
+import { ESavingSchedule } from "../../models/enums.js";
+import calculateEndDate from "../../utils/converter.utils.js";
+import paginate from "../../utils/paginate.js";
+import { Kid } from "../users/user.model.js";
+import { Saving } from "./saving.model.js";
 
 class SavingService {
     static async createSaving(data: any, kidId: any) {

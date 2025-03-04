@@ -1,4 +1,4 @@
-import { fcm } from "../config/firebase/firebase";
+import { fcm } from "../config/firebase/firebase.js";
 
 
 const sendNotification = async (token: string, title: string, body: string) => {

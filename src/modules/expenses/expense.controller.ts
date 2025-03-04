@@ -1,21 +1,20 @@
 import { NextFunction, Request, Response } from "express";
-import ExpenseService from "./expense.service";
-import AuthenticatedRequest from "../../models/AuthenticatedUser";
-import { Kid, User } from "../users/user.model";
-import status_codes from "../../utils/status_constants";
-const asyncHandler = require("express-async-handler");
+import ExpenseService from "./expense.service.js";
+import {AuthenticatedRequest} from "../../models/AuthenticatedUser.js";
+import { Kid, User } from "../users/user.model.js";
+import {status_codes} from "../../utils/status_constants.js";
 
 class ExpenseController {
   static async createExpense(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
-    return ExpenseService.createExpense(req, res);
+    await ExpenseService.createExpense(req, res);
   }
 
   static async fetchAllExpenses(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
@@ -23,11 +22,12 @@ class ExpenseController {
       const user =
         (await User.findById(req.user)) || (await Kid.findById(req.user));
       if (!user) {
-        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+         res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
           status: status_codes.HTTP_401_UNAUTHORIZED,
           success: false,
           message: "Unauthorized access",
-        });
+         });
+         return
       }
 
       const { page = "1", limit = "10" } = req.query;
@@ -41,31 +41,33 @@ class ExpenseController {
         parsedLimit
       );
 
-      return res.status(status_codes.HTTP_200_OK).json({
+       res.status(status_codes.HTTP_200_OK).json({
         status: 200,
         success: true,
         message: `Expenses fetched successfully`,
         data: expenses,
-      });
+       });
+       return
     } catch (error: any) {
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+       res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
         success: false,
         status: 500,
         message: error.message || "An unexpected error occurred",
-      });
+       });
+       return
     }
   }
 
   static async fetchExpense(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
-    return ExpenseService.fetchOneExpense(req, res);
+    await ExpenseService.fetchOneExpense(req, res);
   }
 
   static async fetchExpensesByStatus(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
@@ -73,21 +75,23 @@ class ExpenseController {
       const user =
         (await User.findById(req.user)) || (await Kid.findById(req.user));
       if (!user) {
-        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+         res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
           status: status_codes.HTTP_401_UNAUTHORIZED,
           success: false,
           message: "Unauthorized access",
-        });
+         });
+         return
       }
 
       const { status, page = "1", limit = "10" } = req.query;
 
       if (!status) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+         res.status(status_codes.HTTP_400_BAD_REQUEST).json({
           status: 400,
           success: true,
           message: "Please provide a valid expense status",
-        });
+         });
+         return
       }
       const parsedPage = Number(page);
       const parsedLimit = Number(limit);
@@ -99,18 +103,20 @@ class ExpenseController {
         parsedLimit
       );
 
-      return res.status(status_codes.HTTP_200_OK).json({
+       res.status(status_codes.HTTP_200_OK).json({
         status: 200,
         success: true,
         message: `${status} expenses fetched successfully`,
         data: expenses,
-      });
+       });
+       return
     } catch (error: any) {
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+       res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
         success: false,
         status: 500,
         message: error.message || "An unexpected error occurred",
-      });
+       });
+       return
     }
   }
 

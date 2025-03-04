@@ -1,10 +1,9 @@
-const express = require("express");
+import express from "express"
 const expenseRouter = express.Router();
-import ExpenseController from "./expense.controller";
-import authorizeParent from "../../middlewares/authentication/parentRoleWare";
-import upload from "../../config/multer.config";
-import authorizeKid from "../../middlewares/authentication/childRoleWare";
-import authenticateUser from "../../middlewares/authentication/authware";
+import ExpenseController from "./expense.controller.js";
+import authorizeParent from "../../middlewares/authentication/parentRoleWare.js";
+import authorizeKid from "../../middlewares/authentication/childRoleWare.js";
+import authenticateUser from "../../middlewares/authentication/authware.js";
 
 
 expenseRouter.post("", authorizeParent, ExpenseController.createExpense)

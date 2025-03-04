@@ -14,7 +14,7 @@ import {
   sendWelcomeEmail,
 } from "../../utils/email_sender.utils";
 import { EGender, ERole, EStatus } from "../../models/enums";
-import status_codes from "../../utils/status_constants";
+import {status_codes} from "../../utils/status_constants";
 import {
   decode_token,
   generate_reset_token,
@@ -25,11 +25,11 @@ import RefreshToken from "./refresh.token.model";
 import comparePassword from "../../utils/compare_password";
 import CustomRequest from "../../models/CustomRequest";
 import { uploadSingleFile } from "../../utils/file_upload.utils";
-import AuthenticatedRequest from "../../models/AuthenticatedUser";
 import sendNotification from "../../utils/notifications";
-const bcrypt = require("bcrypt");
+import bcrypt from 'bcrypt';
 
-class AuthService {
+
+export class AuthService {
   static async register(
     reqBody: RegisterInputForParent,
     imageUrl: string | null
@@ -377,7 +377,7 @@ class AuthService {
   }
   
 
-  static async Logout(req: AuthenticatedRequest, res: Response) {
+  static async Logout(req: Request, res: Response) {
     try {
       const user = await check_if_user_or_kid_exists(req.user)
       if (!user) {
@@ -520,7 +520,7 @@ static async ResetPassword(req: Request, res: Response) {
 }
 
 
-  static async EditProfile(req: AuthenticatedRequest, res: Response) {
+  static async EditProfile(req: Request, res: Response) {
     try {
       if (Object.keys(req.body).length === 0 && !req.file) {
         return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
@@ -592,7 +592,7 @@ static async ResetPassword(req: Request, res: Response) {
     }
   }
 
-  static async CreateKidProfile(req: AuthenticatedRequest, res: Response) {
+  static async CreateKidProfile(req: Request, res: Response) {
     try {
       if (!req.body) {
         return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
@@ -694,7 +694,7 @@ static async ResetPassword(req: Request, res: Response) {
     }
   }
 
-  static async DeleteKidProfile(req: AuthenticatedRequest, res: Response) {
+  static async DeleteKidProfile(req: Request, res: Response) {
     try {
       if (!req.user) {
         return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
@@ -890,7 +890,7 @@ static async ResetPassword(req: Request, res: Response) {
     }
   }
 
-  static async FetchKidsForSingleParent(req: AuthenticatedRequest, res: Response) {
+  static async FetchKidsForSingleParent(req: Request, res: Response) {
     try {
       const parent = await User.findById(req.user)
       
@@ -920,7 +920,7 @@ static async ResetPassword(req: Request, res: Response) {
     }
   }
 
-  static async DeleteParent(req: AuthenticatedRequest, res: Response) {
+  static async DeleteParent(req: Request, res: Response) {
     try {
         if (!req.user) {
             return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
@@ -986,5 +986,4 @@ static async ResetPassword(req: Request, res: Response) {
     return totalKids
   }
 }
-
-export default AuthService;
+ 

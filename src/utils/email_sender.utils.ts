@@ -1,7 +1,7 @@
-import { mailtrapClient, sender } from "../config/mailtrap.config";
-const ejs = require("ejs");
-const fs = require("fs");
-const path = require("path"); 
+import { mailtrapClient, sender } from "../config/mailtrap.config.js";
+import ejs from "ejs"
+import fs from "fs"
+import path from "path"
 
 
 

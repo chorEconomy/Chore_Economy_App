@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import status_codes from "../../utils/status_constants";
+import {status_codes} from "../../utils/status_constants.js";
 
 const validateSignUpInputForParent = (req: Request, res: Response, next: NextFunction) => {
     const errors: string[] = [];

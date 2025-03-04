@@ -1,4 +1,4 @@
-const bcrypt = require("bcrypt");
+import bcrypt from "bcrypt"
 
 const comparePassword = async (user_password: string, stored_password: string) => {
     const isVerifiedPassword = await bcrypt.compareSync(user_password, stored_password)

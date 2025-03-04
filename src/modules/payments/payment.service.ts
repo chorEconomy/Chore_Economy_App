@@ -1,8 +1,8 @@
-const Stripe = require("stripe")
-const dotenv = require("dotenv")
+import Stripe from "stripe"
+import * as dotenv from "dotenv";
 dotenv.config()
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
 
 class PaymentService {
     static async createPaymentIntentService(amount: number, currency: string) {

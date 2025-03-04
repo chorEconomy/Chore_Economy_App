@@ -1,4 +1,4 @@
-import cloudinaryConfig from "../config/cloudinary.config";
+import cloudinary from "../config/cloudinary.config.js";
 
 /**
  * Upload a single file to Cloudinary
@@ -10,7 +10,7 @@ const uploadSingleFile = async (file: any) => {
   if (!file) throw new Error("No file uploaded");
 
   const fileBase64 = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
-  return await cloudinaryConfig.uploader.upload(fileBase64, { folder: "uploads" });
+  return await cloudinary.uploader.upload(fileBase64, { folder: "uploads" });
 };
 
 /**
@@ -23,7 +23,7 @@ const uploadMultipleFiles = async (files: any) => {
 
   const uploadPromises = files.map((file: any) => {
     const fileBase64 = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
-    return cloudinaryConfig.uploader.upload(fileBase64, { folder: "uploads" });
+    return cloudinary.uploader.upload(fileBase64, { folder: "uploads" });
   });
 
   return await Promise.all(uploadPromises);

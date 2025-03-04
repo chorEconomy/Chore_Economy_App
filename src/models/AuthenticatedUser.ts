@@ -1,5 +1,5 @@
-import {Request } from "express";
-export default interface AuthenticatedRequest extends Request {
-    user: any
+import { Request } from "express";
+
+export interface AuthenticatedRequest extends Request {
+  user: any;  // or use a more specific type for user if available
 }
-  

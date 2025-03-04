@@ -1,7 +1,6 @@
-import authorizeKid from "../../middlewares/authentication/childRoleWare";
-import SavingController from "./saving.controller";
-
-const express = require("express");
+import authorizeKid from "../../middlewares/authentication/childRoleWare.js";
+import SavingController from "./saving.controller.js";
+import express from "express"
 const savingsRouter = express.Router();
 
 savingsRouter.post("/", authorizeKid, SavingController.CreateSaving)

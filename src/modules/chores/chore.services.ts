@@ -1,16 +1,16 @@
 import { Request, Response } from "express";
-import { uploadMultipleFiles, uploadSingleFile } from "../../utils/file_upload.utils";
-import { Chore } from "./chore.model";
-import status_codes from "../../utils/status_constants";
-import AuthenticatedRequest from "../../models/AuthenticatedUser";
-import { Kid, User } from "../users/user.model";
-import { EChoreStatus, ERole, EStatus } from "../../models/enums";
-import sendNotification from "../../utils/notifications";
-import paginate from "../../utils/paginate";
-import toTitleCase from "../../utils/string_formatter";
+import { uploadMultipleFiles, uploadSingleFile } from "../../utils/file_upload.utils.js";
+import { Chore } from "./chore.model.js";
+import {status_codes} from "../../utils/status_constants.js";
+import { Kid, User } from "../users/user.model.js";
+import { EChoreStatus, ERole, EStatus } from "../../models/enums.js";
+import sendNotification from "../../utils/notifications.js";
+import paginate from "../../utils/paginate.js";
+import toTitleCase from "../../utils/string_formatter.js";
+import { AuthenticatedRequest } from "../../models/AuthenticatedUser.js";
 
 class ChoreService {
-  static async createChore(req: AuthenticatedRequest, res: Response) {
+  static async createChore(req: Request, res: Response) {
     try {
       if (!req.body) {
         return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
@@ -93,7 +93,7 @@ class ChoreService {
     return await paginate(Chore, page, limit, "", filter)
   }
 
-  static async fetchChore(req: AuthenticatedRequest, res: Response) {
+  static async fetchChore(req: Request, res: Response) {
     try {
       if (!req.user) {
         return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
@@ -141,7 +141,7 @@ class ChoreService {
     }
   }
 
-  static async approveChoreReward(req: AuthenticatedRequest, res: Response) {
+  static async approveChoreReward(req: Request, res: Response) {
     try {
       if (!req.user) {
         return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
@@ -205,7 +205,7 @@ class ChoreService {
     }
   }
 
-  static async takeChore(req: AuthenticatedRequest, res: Response) {
+  static async takeChore(req: Request, res: Response) {
       try {
         const kid = await Kid.findById(req.user)
         if (!kid) {
@@ -248,7 +248,7 @@ class ChoreService {
     }
   }
 
-  static async completeChore(req: AuthenticatedRequest, res: Response) {
+  static async completeChore(req: Request, res: Response) {
     try {
       
       const kid = await Kid.findById(req.user);
@@ -328,7 +328,7 @@ class ChoreService {
     }
   }
 
-  static async denyChore(req: AuthenticatedRequest, res: Response) {
+  static async denyChore(req: Request, res: Response) {
     try {
       const parentId = req.user
       if (!parentId) {

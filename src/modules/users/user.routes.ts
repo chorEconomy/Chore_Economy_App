@@ -1,12 +1,12 @@
-const express = require("express");
+import express from "express"
 const authRouter = express.Router();
-import authenticateUser from "../../middlewares/authentication/authware";
-import { validateAuthInputForKid, validateSignUpInputForParent, validateUserRequestPassword } from "../../middlewares/validators/validator";
-import UserController from "./user.controller";
-import otpLimiter from "../../middlewares/otpLimter"; 
-import upload from "../../config/multer.config";
-import authorizeParent from "../../middlewares/authentication/parentRoleWare";
-import authorizeKid from "../../middlewares/authentication/childRoleWare";
+import authenticateUser from "../../middlewares/authentication/authware.js";
+import { validateSignUpInputForParent, validateAuthInputForKid } from "../../middlewares/validators/validator.js";
+import UserController from "./user.controller.js";
+import otpLimiter from "../../middlewares/otpLimter.js";
+import upload from "../../config/multer.config.js";
+import authorizeParent from "../../middlewares/authentication/parentRoleWare.js";
+import authorizeKid from "../../middlewares/authentication/childRoleWare.js";
 
 
 authRouter.post("/signup/parent", upload.single("profile-image"), validateSignUpInputForParent, UserController.registerParent)

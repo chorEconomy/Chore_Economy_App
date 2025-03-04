@@ -1,4 +1,4 @@
-import HttpException from "../models/HttpException";
+import HttpException from "../models/HttpException.js";
 
 export default function normalizeError(error: Error | HttpException): HttpException {
     if (error instanceof HttpException) {

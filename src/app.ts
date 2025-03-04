@@ -1,16 +1,15 @@
-const express = require("express");
+import express from "express"
 import { NextFunction, Request, Response } from "express"; 
-import authRouter from "./modules/users/user.routes";
-import choreRouter from "./modules/chores/chore.routes";
-import expenseRouter from "./modules/expenses/expense.routes";
-import paymentRouter from "./modules/payments/payment.route";
-import HttpException from "./models/HttpException"
+import authRouter from "./modules/users/user.routes.js";
+import choreRouter from "./modules/chores/chore.routes.js";
+import expenseRouter from "./modules/expenses/expense.routes.js";
+import paymentRouter from "./modules/payments/payment.route.js";
+import {status_codes} from "./utils/status_constants.js";
+import HttpException from "./models/HttpException.js";
+import savingsRouter from "./modules/savings/saving.routes.js";
 
-const cors = require("cors"); 
-import status_codes  from "./utils/status_constants"; 
-import normalizeError from "./utils/normalize_error";
+// import cors from "cors"
 // import globalErrorHandler from "./middlewares/globalErrorHandler";
-import savingsRouter from "./modules/savings/saving.routes";
 
 const app = express();
 
@@ -36,14 +35,13 @@ app.use("/api/v1/payments", paymentRouter)
 
 // Controlling when a user try to hit on any undefined route or path....
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
-  // const error = new HttpException(status_codes.HTTP_404_NOT_FOUND, `Can't find ${req.originalUrl} on the server!`)
-  // next(error)
-  return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-    status: 500,
+ res.status(status_codes.HTTP_404_NOT_FOUND).json({
+    status: 404,
     success: false,
     message: `Can't find ${req.originalUrl} on the server!`
-  })
+  });
 });
+
 
 // app.use(globalErrorHandler);
 

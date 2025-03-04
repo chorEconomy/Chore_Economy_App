@@ -1,7 +1,6 @@
-import { Schema, model, ObjectId, Document } from "mongoose";
-import { EGender, ERole, EStatus } from "../../models/enums";
-const bcrypt = require("bcrypt");
-const mongoose = require("mongoose");
+import mongoose, { Schema, model, ObjectId, Document } from "mongoose";
+import { EStatus,  EGender, ERole } from "../../models/enums.js";
+import bcrypt from "bcrypt"
 
 
  
@@ -86,7 +85,7 @@ userSchema.pre("save", async function (next) {
   }
   try {
     const salt = await bcrypt.genSalt(12); 
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(String(this.password), salt);
     next();
   } catch (error: any) {
     next(error); // Pass any error to the next middleware

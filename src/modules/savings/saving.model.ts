@@ -1,6 +1,5 @@
-import { ESavingSchedule } from "../../models/enums"
-import { Schema, model, ObjectId, Document } from "mongoose"; 
-const mongoose = require("mongoose")
+import { ESavingSchedule } from "../../models/enums.js";
+import mongoose, { Schema, model, ObjectId, Document } from "mongoose"; 
 
 interface ISaving extends Document{
     kidId: ObjectId

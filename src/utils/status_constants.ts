@@ -1,4 +1,4 @@
- const status_codes = {
+export const status_codes = {
     HTTP_200_OK: 200,
     HTTP_201_CREATED: 201,
     HTTP_204_NO_CONTENT: 204,
@@ -13,4 +13,3 @@
     HTTP_500_INTERNAL_SERVER_ERROR: 500
 }
 
-export default status_codes;

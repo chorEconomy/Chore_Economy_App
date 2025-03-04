@@ -1,11 +1,11 @@
-const jwt = require('jsonwebtoken'); 
+import jwt from "jsonwebtoken";
 import { NextFunction, Request, Response } from "express";
-import status_codes from "../../utils/status_constants";
-import { ERole } from "../../models/enums";
-import { RequestUser } from "../../models/RequestUser";
-import { check_if_user_exist_with_id } from "../../utils/check_user_exists.utils";
+import {status_codes} from "../../utils/status_constants.js";
+import { ERole } from "../../models/enums.js";
+import { check_if_user_or_kid_exists } from "../../utils/check_user_exists.utils.js";
+import { AuthenticatedRequest } from "../../models/AuthenticatedUser.js";
 
-const authorizeAdmin = async (req: RequestUser, res: Response, next: NextFunction) => {
+const authorizeAdmin = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const secret = process.env.ACCESS_SECRET;
     
     if (!secret) {
@@ -30,7 +30,7 @@ const authorizeAdmin = async (req: RequestUser, res: Response, next: NextFunctio
         const payload = jwt.verify(token, secret) as { sub: string };
 
         // Check if the user exists
-        const foundUser = await check_if_user_exist_with_id(payload.sub);
+        const foundUser = await check_if_user_or_kid_exists(payload.sub);
         if (!foundUser) {
             return res.status(status_codes.HTTP_404_NOT_FOUND).json({
                 status: 404,

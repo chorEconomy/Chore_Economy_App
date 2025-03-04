@@ -1,21 +1,20 @@
 import { NextFunction, Request, Response } from "express";
-import ChoreService from "./chore.services";
-import AuthenticatedRequest from "../../models/AuthenticatedUser";
-import { Kid, User } from "../users/user.model";
-import { ERole } from "../../models/enums";
-import status_codes from "../../utils/status_constants";
+import ChoreService from "./chore.services.js";
+import { Kid, User } from "../users/user.model.js";
+import {status_codes} from "../../utils/status_constants.js";
 
 class ChoreController {
   static async createChore(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
-    return ChoreService.createChore(req, res);
+    
+    await ChoreService.createChore(req, res);
   }
 
   static async fetchAllChores(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
@@ -24,11 +23,12 @@ class ChoreController {
             (await User.findById(req.user)) || (await Kid.findById(req.user));
         
       if (!user) {
-        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+         res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
           status: 401,
           success: false,
           message: "Unauthorized access",
-        });
+         });
+        return
         }
 
         const { page = "1", limit = "10" } = req.query
@@ -37,23 +37,25 @@ class ChoreController {
         
         const chores = ChoreService.fetchAllChoresFromDB(user, parsedPage, parsedLimit);
         
-       return res.status(status_codes.HTTP_200_OK).json({
+        res.status(status_codes.HTTP_200_OK).json({
         status: 200,
         success: true,
         message: `Chores fetched successfully`,
         data: chores,
-      });
+        });
+      return
     } catch (error: any) {
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+       res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
         success: false,
         status: 500,
         message: error.message || "An unexpected error occurred",
-      });
+       });
+      return
     }
   }
 
   static async fetchChoresByStatus(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
@@ -61,21 +63,23 @@ class ChoreController {
       let user =
         (await User.findById(req.user)) || (await Kid.findById(req.user));
       if (!user) {
-        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
+         res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
           status: status_codes.HTTP_401_UNAUTHORIZED,
           success: false,
           message: "Unauthorized access",
-        });
+         });
+         return
       }
 
       const { status, page = "1", limit = "10" } = req.query;
 
       if (!status) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+         res.status(status_codes.HTTP_400_BAD_REQUEST).json({
           status: 400,
           success: true,
           message: "Please provide a valid chore status",
-        });
+         });
+         return
       }
       const parsedPage = Number(page);
       const parsedLimit = Number(limit);
@@ -87,59 +91,61 @@ class ChoreController {
         parsedLimit
       );
 
-      return res.status(status_codes.HTTP_200_OK).json({
+       res.status(status_codes.HTTP_200_OK).json({
         status: 200,
         success: true,
         message: `${status} chores fetched successfully`,
         data: chores,
-      });
+       });
+       return
     } catch (error: any) {
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+       res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
         success: false,
         status: 500,
         message: error.message || "An unexpected error occurred",
-      });
+       });
+       return
     }
   }
 
   static async fetchChore(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
-    return ChoreService.fetchChore(req, res);
+     await ChoreService.fetchChore(req, res);
     }
     
   static async completeChore(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
-    return ChoreService.completeChore(req, res);
+     await ChoreService.completeChore(req, res);
   }
 
   static async approveChoreReward(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
-    return ChoreService.approveChoreReward(req, res);
+     await ChoreService.approveChoreReward(req, res);
   }
 
   static async takeChore(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
-    return ChoreService.takeChore(req, res);
+     await ChoreService.takeChore(req, res);
   }
 
   static async denyChore(
-    req: AuthenticatedRequest,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {
-    return ChoreService.denyChore(req, res);
+     await ChoreService.denyChore(req, res);
     }
     
 

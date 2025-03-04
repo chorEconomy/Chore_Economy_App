@@ -1,15 +1,13 @@
 import { Request, Response } from "express";
-import { uploadSingleFile } from "../../utils/file_upload.utils";
-import { Expense } from "./expense.model";
-import status_codes from "../../utils/status_constants";
-import AuthenticatedRequest from "../../models/AuthenticatedUser";
-import { Kid, User } from "../users/user.model";
-import { ERole, ExpenseStatus } from "../../models/enums";
-import { log } from "node:console";
-import paginate from "../../utils/paginate";
+import { uploadSingleFile } from "../../utils/file_upload.utils.js";
+import { Expense } from "./expense.model.js";
+import {status_codes} from "../../utils/status_constants.js";
+import { Kid, User } from "../users/user.model.js";
+import { ERole } from "../../models/enums.js";
+import paginate from "../../utils/paginate.js";
 
 class ExpenseService {
-  static async createExpense(req: AuthenticatedRequest, res: Response) {
+  static async createExpense(req: Request, res: Response) {
     try {
       if (!req.body) {
         return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
@@ -66,7 +64,7 @@ class ExpenseService {
     }
   }
  
-  static async fetchOneExpense(req: AuthenticatedRequest, res: Response) {
+  static async fetchOneExpense(req: Request, res: Response) {
     try {
       if (!req.user) {
         return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
