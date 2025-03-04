@@ -102,7 +102,17 @@ class ExpenseService {
         }
     }
     static async fetchAllExpensesFromDB(user, page, limit) {
-        return this.fetchExpensesByStatusFromDB(user, "", page, limit);
+        const filter = {};
+        if (user.role === ERole.Parent) {
+            filter.parentId = user._id;
+        }
+        else if (user.role === ERole.Kid) {
+            filter.kidId = user._id;
+        }
+        else {
+            throw new Error("Invalid Role");
+        }
+        return await paginate(Expense, page, limit, "", filter);
     }
     static async fetchExpensesByStatusFromDB(user, status, page, limit) {
         const filter = { status: status };

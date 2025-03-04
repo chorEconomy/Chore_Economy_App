@@ -76,7 +76,17 @@ class ChoreService {
   }
 
   static async fetchAllChoresFromDB(user: any, page: number, limit: number) {
-    return this.fetchChoresByStatusFromDB(user, "", page, limit)
+    const filter: any = {}
+    
+    if (user.role === ERole.Parent) {
+      filter.parentId = user._id
+    }  else if (user.role === ERole.Kid) {
+      filter.kidId = user._id
+    } else {
+      throw new Error("Invalid Role")
+    }
+
+    return await paginate(Chore, page, limit, "", filter)
   }
 
   static async fetchChoresByStatusFromDB(user: any, status: string, page: number, limit: number) {

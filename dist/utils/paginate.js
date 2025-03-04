@@ -18,13 +18,14 @@ const paginate = async (model, page, limit, populateField = "", query = {}) => {
         };
     }
     // Fetch paginated results
-    const results = await model
+    const result = await model
         .find(query)
         .skip(skip)
         .limit(limit)
         .populate(populateField);
+    console.log(result);
     return {
-        data: results,
+        result,
         pagination: {
             totalItems,
             totalPages,

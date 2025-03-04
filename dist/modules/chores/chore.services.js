@@ -64,7 +64,17 @@ class ChoreService {
         }
     }
     static async fetchAllChoresFromDB(user, page, limit) {
-        return this.fetchChoresByStatusFromDB(user, "", page, limit);
+        const filter = {};
+        if (user.role === ERole.Parent) {
+            filter.parentId = user._id;
+        }
+        else if (user.role === ERole.Kid) {
+            filter.kidId = user._id;
+        }
+        else {
+            throw new Error("Invalid Role");
+        }
+        return await paginate(Chore, page, limit, "", filter);
     }
     static async fetchChoresByStatusFromDB(user, status, page, limit) {
         const filter = { status: status };

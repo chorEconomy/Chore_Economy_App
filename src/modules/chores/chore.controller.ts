@@ -35,13 +35,13 @@ class ChoreController {
         const parsedPage = Number(page)
         const parsedLimit = Number(limit)
         
-        const chores = ChoreService.fetchAllChoresFromDB(user, parsedPage, parsedLimit);
+        const data = await ChoreService.fetchAllChoresFromDB(user, parsedPage, parsedLimit);
         
         res.status(status_codes.HTTP_200_OK).json({
         status: 200,
         success: true,
         message: `Chores fetched successfully`,
-        data: chores,
+        data,
         });
       return
     } catch (error: any) {

@@ -1,3 +1,5 @@
+import { log } from "console";
+
 const paginate = async (
     model: any, 
     page: number, 
@@ -27,14 +29,17 @@ const paginate = async (
       }
   
       // Fetch paginated results
-      const results = await model
+      const result = await model
           .find(query)
           .skip(skip)
           .limit(limit)
-          .populate(populateField);
+        .populate(populateField);
+    
+    console.log(result);
+    
   
       return {
-          data: results,
+          result,
           pagination: {
               totalItems,
               totalPages,
