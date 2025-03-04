@@ -20,6 +20,7 @@ export var EChoreStatus;
     EChoreStatus["Completed"] = "completed";
     EChoreStatus["InProgress"] = "inprogress";
     EChoreStatus["Pending"] = "pending";
+    EChoreStatus["All"] = "all";
     EChoreStatus["Rejected"] = "rejected";
     EChoreStatus["Unclaimed"] = "unclaimed";
 })(EChoreStatus || (EChoreStatus = {}));
@@ -27,6 +28,7 @@ export var ExpenseStatus;
 (function (ExpenseStatus) {
     ExpenseStatus["Paid"] = "paid";
     ExpenseStatus["Unpaid"] = "unpaid";
+    ExpenseStatus["All"] = "all";
 })(ExpenseStatus || (ExpenseStatus = {}));
 export var ESavingSchedule;
 (function (ESavingSchedule) {

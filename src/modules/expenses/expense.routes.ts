@@ -7,7 +7,6 @@ import authenticateUser from "../../middlewares/authentication/authware.js";
 
 
 expenseRouter.post("", authorizeParent, ExpenseController.createExpense)
-expenseRouter.get("", authenticateUser, ExpenseController.fetchAllExpenses)
 expenseRouter.get("/:id", authorizeParent, ExpenseController.fetchExpense)
 expenseRouter.get("", authenticateUser, ExpenseController.fetchExpensesByStatus)
 

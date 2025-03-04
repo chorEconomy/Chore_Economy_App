@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import ChoreService from "./chore.services.js";
 import { Kid, User } from "../users/user.model.js";
 import {status_codes} from "../../utils/status_constants.js";
+import { EChoreStatus } from "../../models/enums.js";
 
 class ChoreController {
   static async createChore(
@@ -71,25 +72,37 @@ class ChoreController {
          return
       }
 
-      const { status, page = "1", limit = "10" } = req.query;
+      let status: any = req.query.status
+      
+      const { page = "1", limit = "10" } = req.query;
+    
+      if (!status || !Object.values(EChoreStatus).includes(status)) {
+        res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+            status: 400,
+            success: false,
+            message: "Invalid or missing chore status. Please provide a valid status.",
+        });
+        return;
+    }
 
-      if (!status) {
-         res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
-          success: true,
-          message: "Please provide a valid chore status",
-         });
-         return
-      }
       const parsedPage = Number(page);
       const parsedLimit = Number(limit);
 
-      const chores = await ChoreService.fetchChoresByStatusFromDB(
+      let chores: any = null
+       chores = await ChoreService.fetchChoresByStatusFromDB(
         user,
         status as string,
         parsedPage,
         parsedLimit
       );
+
+      if (status === EChoreStatus.All) {
+        chores = await ChoreService.fetchAllChoresFromDB(
+          user,
+          parsedPage,
+          parsedLimit
+        );
+      }
 
        res.status(status_codes.HTTP_200_OK).json({
         status: 200,

@@ -1,6 +1,7 @@
 import ExpenseService from "./expense.service.js";
 import { Kid, User } from "../users/user.model.js";
 import { status_codes } from "../../utils/status_constants.js";
+import { ExpenseStatus } from "../../models/enums.js";
 class ExpenseController {
     static async createExpense(req, res, next) {
         await ExpenseService.createExpense(req, res);
@@ -51,18 +52,23 @@ class ExpenseController {
                 });
                 return;
             }
-            const { status, page = "1", limit = "10" } = req.query;
-            if (!status) {
+            const status = req.query.status;
+            const { page = "1", limit = "10" } = req.query;
+            if (!status || !Object.values(ExpenseStatus).includes(status)) {
                 res.status(status_codes.HTTP_400_BAD_REQUEST).json({
                     status: 400,
-                    success: true,
-                    message: "Please provide a valid expense status",
+                    success: false,
+                    message: "Invalid or missing expense status. Please provide a valid status.",
                 });
                 return;
             }
             const parsedPage = Number(page);
             const parsedLimit = Number(limit);
-            const expenses = await ExpenseService.fetchExpensesByStatusFromDB(user, status, parsedPage, parsedLimit);
+            let expenses;
+            expenses = await ExpenseService.fetchExpensesByStatusFromDB(user, status, parsedPage, parsedLimit);
+            if (status === ExpenseStatus.All) {
+                expenses = await ExpenseService.fetchAllExpensesFromDB(user, parsedPage, parsedLimit);
+            }
             res.status(status_codes.HTTP_200_OK).json({
                 status: 200,
                 success: true,

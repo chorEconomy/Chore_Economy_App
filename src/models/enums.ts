@@ -19,13 +19,15 @@ export enum EChoreStatus {
   Completed = "completed",
   InProgress = "inprogress",
   Pending = "pending",
+  All = "all",
   Rejected = "rejected",
   Unclaimed = "unclaimed"
 }
 
 export enum ExpenseStatus {
   Paid = "paid",
-  Unpaid = "unpaid"
+  Unpaid = "unpaid",
+  All = "all"
 }
 
 export enum ESavingSchedule {
