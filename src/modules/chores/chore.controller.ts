@@ -14,34 +14,35 @@ class ChoreController {
     await ChoreService.createChore(req, res);
   }
 
-  static async fetchAllChores(
+  static async fetchAllChoresCreatedByParentForKid(
     req: Request,
     res: Response,
     next: NextFunction
   ) {
     try {
-      const user =
-            (await User.findById(req.user)) || (await Kid.findById(req.user));
+      const kid = await Kid.findById(req.user);
         
-      if (!user) {
+      if (!kid) {
          res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
           status: 401,
           success: false,
           message: "Unauthorized access",
          });
         return
-        }
+      }
+      
+      const {parentId} = req.params 
 
         const { page = "1", limit = "10" } = req.query
         const parsedPage = Number(page)
         const parsedLimit = Number(limit)
         
-        const data = await ChoreService.fetchAllChoresFromDB(user, parsedPage, parsedLimit);
+        const data = await ChoreService.fetchChoresByStatusFromDBForKid(kid, parentId, parsedPage, parsedLimit);
         
         res.status(status_codes.HTTP_200_OK).json({
         status: 200,
         success: true,
-        message: `Chores fetched successfully`,
+        message: `All chores fetched successfully`,
         data,
         });
       return

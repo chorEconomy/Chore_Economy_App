@@ -810,7 +810,10 @@ static async ResetPassword(req: Request, res: Response) {
         success: true,
         access_token,
         refresh_token,
-        role: kid.role,
+        data: {
+          ...kid.toObject(),
+          password: undefined
+        }
       });
 
     } catch (error: any) {
