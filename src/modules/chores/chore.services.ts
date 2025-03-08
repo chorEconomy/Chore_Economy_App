@@ -75,14 +75,19 @@ class ChoreService {
     }
   }
 
-  static async fetchAllChoresFromDB(user: any, page: number, limit: number) {
+  static async fetchAllChoresFromDB(user: any, owner: string, page: number, limit: number) {
     const filter: any = {}
     
     if (user.role === ERole.Parent) {
       filter.parentId = user._id
-    }  else if (user.role === ERole.Kid) {
+    }
+    else if (user.role === ERole.Kid  && owner !== "parent") {
       filter.kidId = user._id
-    } else {
+    }
+    else if (user.role === ERole.Kid && owner === "parent") {
+      filter.parentId = user.parentId;
+  }
+    else {
       throw new Error("Invalid Role")
     }
 
@@ -102,11 +107,13 @@ class ChoreService {
     return await paginate(Chore, page, limit, "", filter)
   }
  
-  static async fetchChoresByStatusFromDBForKid(kid: any, page: number, limit: number) {
-    const filter: any = {}
+  static async fetchChoresByStatusFromDBForKid(kid: any, status: string, owner: string, page: number, limit: number) {
+    const filter: any = {status: status}
     
     if (kid.role === ERole.Kid) {
       filter.parentId = kid.parentId
+      console.log("parentId",  kid.parentId);
+      
     } else {
       throw new Error("Invalid Role")
     }

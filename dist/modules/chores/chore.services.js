@@ -63,13 +63,16 @@ class ChoreService {
             });
         }
     }
-    static async fetchAllChoresFromDB(user, page, limit) {
+    static async fetchAllChoresFromDB(user, owner, page, limit) {
         const filter = {};
         if (user.role === ERole.Parent) {
             filter.parentId = user._id;
         }
-        else if (user.role === ERole.Kid) {
+        else if (user.role === ERole.Kid && owner !== "parent") {
             filter.kidId = user._id;
+        }
+        else if (user.role === ERole.Kid && owner === "parent") {
+            filter.parentId = user.parentId;
         }
         else {
             throw new Error("Invalid Role");
@@ -89,10 +92,11 @@ class ChoreService {
         }
         return await paginate(Chore, page, limit, "", filter);
     }
-    static async fetchChoresByStatusFromDBForKid(kid, page, limit) {
-        const filter = {};
+    static async fetchChoresByStatusFromDBForKid(kid, status, owner, page, limit) {
+        const filter = { status: status };
         if (kid.role === ERole.Kid) {
             filter.parentId = kid.parentId;
+            console.log("parentId", kid.parentId);
         }
         else {
             throw new Error("Invalid Role");

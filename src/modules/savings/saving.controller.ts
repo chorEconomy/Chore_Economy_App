@@ -127,7 +127,7 @@ class SavingController {
 
             const savings = await SavingService.fetchAllSavings(kid._id, page, limit)
 
-            if (savings.data === 0) {
+            if (savings.result === 0) {
                  res.status(status_codes.HTTP_404_NOT_FOUND).json({
                     status: 404,
                     success: false,

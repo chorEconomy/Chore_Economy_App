@@ -14,45 +14,6 @@ class ChoreController {
     await ChoreService.createChore(req, res);
   }
 
-  static async fetchAllChoresCreatedByParentForKid(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) {
-    try {
-      const kid = await Kid.findById(req.user);
-        
-      if (!kid) {
-         res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-          status: 401,
-          success: false,
-          message: "Unauthorized access",
-         });
-        return
-      } 
-
-        const { page = "1", limit = "10" } = req.query
-        const parsedPage = Number(page)
-        const parsedLimit = Number(limit)
-        
-        const data = await ChoreService.fetchChoresByStatusFromDBForKid(kid, parsedPage, parsedLimit);
-        
-        res.status(status_codes.HTTP_200_OK).json({
-        status: 200,
-        success: true,
-        message: `All chores fetched successfully`,
-        data,
-        });
-      return
-    } catch (error: any) {
-       res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        success: false,
-        status: 500,
-        message: error.message || "An unexpected error occurred",
-       });
-      return
-    }
-  }
 
   static async fetchChoresByStatus(
     req: Request,
@@ -72,6 +33,7 @@ class ChoreController {
       }
 
       let status: any = req.query.status
+      let owner: any = req.query.owner
       
       const { page = "1", limit = "10" } = req.query;
     
@@ -88,6 +50,7 @@ class ChoreController {
       const parsedLimit = Number(limit);
 
       let chores: any = null
+
        chores = await ChoreService.fetchChoresByStatusFromDB(
         user,
         status as string,
@@ -98,6 +61,7 @@ class ChoreController {
       if (status === EChoreStatus.All) {
         chores = await ChoreService.fetchAllChoresFromDB(
           user,
+          owner,
           parsedPage,
           parsedLimit
         );
@@ -107,7 +71,7 @@ class ChoreController {
         status: 200,
         success: true,
         message: `${status} chores fetched successfully`,
-        data: chores,
+        data: chores.result,
        });
        return
     } catch (error: any) {

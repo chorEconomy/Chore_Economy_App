@@ -8,7 +8,6 @@ import authenticateUser from "../../middlewares/authentication/authware.js";
 
 choreRouter.post("/", upload.single("chore-image"), authorizeParent, ChoreController.createChore);
 choreRouter.get("", authenticateUser, ChoreController.fetchChoresByStatus)
-choreRouter.get("", authorizeKid, ChoreController.fetchAllChoresCreatedByParentForKid)
 choreRouter.get("/:id", authorizeParent, ChoreController.fetchChore)
 choreRouter.patch("/:id/approve", authorizeParent, ChoreController.approveChoreReward)
 choreRouter.get("/:id", authorizeKid, ChoreController.takeChore)
