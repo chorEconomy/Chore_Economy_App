@@ -17,11 +17,10 @@ class ChoreController {
                 });
                 return;
             }
-            const { parentId } = req.params;
             const { page = "1", limit = "10" } = req.query;
             const parsedPage = Number(page);
             const parsedLimit = Number(limit);
-            const data = await ChoreService.fetchChoresByStatusFromDBForKid(kid, parentId, parsedPage, parsedLimit);
+            const data = await ChoreService.fetchChoresByStatusFromDBForKid(kid, parsedPage, parsedLimit);
             res.status(status_codes.HTTP_200_OK).json({
                 status: 200,
                 success: true,
