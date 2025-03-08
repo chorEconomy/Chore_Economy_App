@@ -121,10 +121,11 @@ class ExpenseService {
 
   static async fetchAllExpensesFromDB(user: any, page: number, limit: number) {
     const filter: any = {}
+
     if (user.role === ERole.Parent) {
       filter.parentId = user._id
     } else if (user.role === ERole.Kid) {
-      filter.kidId = user._id
+      filter.parentId = user.parentId
     } else {
       throw new Error("Invalid Role")
     }
@@ -137,7 +138,7 @@ class ExpenseService {
     if (user.role === ERole.Parent) {
       filter.parentId = user._id
     } else if (user.role === ERole.Kid) {
-      filter.kidId = user._id
+      filter.parentId = user.parentId
     } else {
       throw new Error("Invalid Role")
     }

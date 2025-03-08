@@ -5,7 +5,6 @@ import authorizeParent from "../../middlewares/authentication/parentRoleWare.js"
 import upload from "../../config/multer.config.js";
 import authorizeKid from "../../middlewares/authentication/childRoleWare.js";
 import authenticateUser from "../../middlewares/authentication/authware.js";
-
 choreRouter.post("/", upload.single("chore-image"), authorizeParent, ChoreController.createChore);
 choreRouter.get("", authenticateUser, ChoreController.fetchChoresByStatus);
 choreRouter.get("/:id", authorizeParent, ChoreController.fetchChore);
@@ -13,5 +12,4 @@ choreRouter.patch("/:id/approve", authorizeParent, ChoreController.approveChoreR
 choreRouter.get("/:id", authorizeKid, ChoreController.takeChore);
 choreRouter.post("/:id/deny", authorizeParent, ChoreController.approveChoreReward);
 choreRouter.post(":id/complete", upload.array("chore-image"), authorizeKid, ChoreController.completeChore);
-
 export default choreRouter;
