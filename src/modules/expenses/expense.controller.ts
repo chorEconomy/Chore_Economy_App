@@ -99,7 +99,8 @@ class ExpenseController {
       const parsedPage = Number(page);
       const parsedLimit = Number(limit);
 
-    let expenses: any
+      let expenses: any
+      
      expenses = await ExpenseService.fetchExpensesByStatusFromDB(
         user,
         status as string,

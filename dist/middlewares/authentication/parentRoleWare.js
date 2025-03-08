@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { status_codes } from "../../utils/status_constants.js";
 import { ERole } from "../../models/enums.js";
 import { check_if_user_or_kid_exists } from "../../utils/check_user_exists.utils.js";
+
 const authorizeParent = async (req, res, next) => {
     const secret = process.env.ACCESS_SECRET;
     // Ensure the secret exists

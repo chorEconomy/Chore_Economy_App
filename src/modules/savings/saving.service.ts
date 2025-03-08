@@ -30,9 +30,7 @@ class SavingService {
     }
 
     static async fetchAllSavings(kidId: any, page: number, limit: number) {
-  
         const savings = await paginate(Saving, page, limit, "", { kidId: kidId })
-
         return savings
     }
 

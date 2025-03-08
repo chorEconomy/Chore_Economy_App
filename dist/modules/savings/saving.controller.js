@@ -122,7 +122,7 @@ class SavingController {
                 success: true,
                 message: "Savings fetched successfully.",
                 result: {
-                    data: savings.data,
+                    data: savings.result,
                     pagination: savings.pagination
                 }
             });
