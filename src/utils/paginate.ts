@@ -33,7 +33,8 @@ const paginate = async (
           .find(query)
           .skip(skip)
           .limit(limit)
-        .populate(populateField);
+        .populate(populateField)
+        .sort({ createdAt: -1 })  
     
     console.log(result);
     

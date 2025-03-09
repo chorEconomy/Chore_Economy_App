@@ -22,7 +22,8 @@ const paginate = async (model, page, limit, populateField = "", query = {}) => {
         .find(query)
         .skip(skip)
         .limit(limit)
-        .populate(populateField);
+        .populate(populateField)
+        .sort({ createdAt: -1 });
     console.log(result);
     return {
         result,
