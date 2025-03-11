@@ -130,8 +130,8 @@ class ChoreController {
          });
          return
       }
-    }
-    
+  }
+  
   static async completeChore(
     req: Request,
     res: Response,
