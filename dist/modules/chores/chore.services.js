@@ -103,46 +103,19 @@ class ChoreService {
         }
         return await paginate(Chore, page, limit, "", filter);
     }
-    static async fetchChore(req, res) {
-        try {
-            if (!req.user) {
-                return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-                    status: 401,
-                    success: false,
-                    message: "Unauthorized access",
-                });
-            }
-            const { id } = req.params;
-            if (!id) {
-                return res.status(status_codes.HTTP_400_BAD_REQUEST).json({ status: 400, success: false, message: "Provide a valid id" });
-            }
-            const parentId = req.user;
-            const existingParent = await User.findById({ _id: parentId });
-            if (!existingParent) {
-                return res.status(status_codes.HTTP_404_NOT_FOUND).json({ status: 404, success: false, message: `Parent with the id: ${parentId} not found` });
-            }
-            const existingChore = await Chore.findOne({ _id: id, parentId: parentId });
-            if (!existingChore) {
-                return res.status(status_codes.HTTP_404_NOT_FOUND).json({ status: 404, success: false, messgae: `Chore with this id: ${id} not found!` });
-            }
-            return res
-                .status(status_codes.HTTP_200_OK)
-                .json({
-                status: 200,
-                success: true,
-                message: "Chore retrieved successfully",
-                data: existingChore
-            });
+    static async fetchChore(user, choreId) {
+        const filter = { _id: choreId };
+        if (user.role === ERole.Parent) {
+            filter.parentId = user._id;
         }
-        catch (error) {
-            console.error("Chore fetching error:", error);
-            return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-                status: 500,
-                success: false,
-                message: "Internal server error",
-                error: error?.message,
-            });
+        else if (user.role === ERole.Kid) {
+            filter.kidId = user._id;
         }
+        else {
+            throw new Error("Invalid Role");
+        }
+        const chore = await Chore.findOne(filter);
+        return chore;
     }
     static async approveChoreReward(req, res) {
         try {

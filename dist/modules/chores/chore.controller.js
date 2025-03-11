@@ -53,7 +53,46 @@ class ChoreController {
         }
     }
     static async fetchChore(req, res, next) {
-        await ChoreService.fetchChore(req, res);
+        try {
+            let user = (await User.findById(req.user)) || (await Kid.findById(req.user));
+            if (!user) {
+                res.status(status_codes.HTTP_401_UNAUTHORIZED).json({ status: 401, success: false, message: "Unauthorized access" });
+                return;
+            }
+            const choreId = req.params.id;
+            if (!choreId) {
+                res.status(status_codes.HTTP_400_BAD_REQUEST).json({
+                    status: 400,
+                    success: false,
+                    message: "Bad Request! Please provide a valid chore id"
+                });
+                return;
+            }
+            const chore = await ChoreService.fetchChore(user, choreId);
+            if (!chore) {
+                res.status(status_codes.HTTP_404_NOT_FOUND).json({
+                    status: 404,
+                    success: false,
+                    message: "Chore not found!"
+                });
+                return;
+            }
+            res.status(status_codes.HTTP_200_OK).json({
+                status: 200,
+                success: true,
+                message: "Chore retrieved successfully",
+                data: chore
+            });
+            return;
+        }
+        catch (error) {
+            res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
+                success: false,
+                status: 500,
+                message: error.message || "An unexpected error occurred",
+            });
+            return;
+        }
     }
     static async completeChore(req, res, next) {
         await ChoreService.completeChore(req, res);
