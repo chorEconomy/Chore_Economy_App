@@ -215,7 +215,7 @@ class ChoreService {
         }
       
         if (existingChore.status === EChoreStatus.InProgress) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, messgae: `Chore with this id: ${choreId} has already been taken!`})
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, message: `Chore has been taken!`})
         }
         
 
