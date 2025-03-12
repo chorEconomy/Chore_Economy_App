@@ -213,7 +213,14 @@ class ChoreService {
       if (!existingChore) {
         return res.status(status_codes.HTTP_404_NOT_FOUND).json({status: 404, success: false, messgae: `Chore with this id: ${choreId} not found!`})
         }
+      
+        if (existingChore.status === EChoreStatus.InProgress) {
+        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({status: 400, success: false, messgae: `Chore with this id: ${choreId} has already been taken!`})
+        }
         
+
+        
+
         existingChore.status = EChoreStatus.InProgress
         existingChore.kidId = req.user
 

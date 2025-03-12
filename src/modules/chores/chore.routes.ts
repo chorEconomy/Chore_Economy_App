@@ -10,7 +10,7 @@ choreRouter.post("/", upload.single("chore-image"), authorizeParent, ChoreContro
 choreRouter.get("", authenticateUser, ChoreController.fetchChoresByStatus)
 choreRouter.get("/:id", authenticateUser, ChoreController.fetchChore)
 choreRouter.patch("/:id/approve", authorizeParent, ChoreController.approveChoreReward)
-choreRouter.get("/:id", authorizeKid, ChoreController.takeChore)
+choreRouter.patch("/:id", authorizeKid, ChoreController.takeChore)
 choreRouter.post("/:id/deny", authorizeParent, ChoreController.approveChoreReward)
 choreRouter.post(":id/complete", upload.array("chore-image"), authorizeKid, ChoreController.completeChore)
 
