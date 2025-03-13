@@ -1,5 +1,8 @@
 export default function calculateEndDate(startDate, goalAmount, savingsPerPeriod, frequency) {
     let start = new Date(startDate);
+    if (isNaN(start.getTime())) {
+        throw new Error("Invalid start date value");
+    }
     let periods = Math.ceil(goalAmount / savingsPerPeriod);
     if (frequency === "weekly") {
         start.setDate(start.getDate() + periods * 7);

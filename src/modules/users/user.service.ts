@@ -23,10 +23,10 @@ import {
 } from "../../utils/token_management";
 import RefreshToken from "./refresh.token.model";
 import comparePassword from "../../utils/compare_password";
-import CustomRequest from "../../models/CustomRequest";
 import { uploadSingleFile } from "../../utils/file_upload.utils";
 import sendNotification from "../../utils/notifications";
 import bcrypt from 'bcrypt';
+import CustomRequest from "../../models/CustomRequest";
 
 
 export class AuthService {

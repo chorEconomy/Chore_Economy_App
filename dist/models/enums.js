@@ -18,10 +18,11 @@ export var EStatus;
 export var EChoreStatus;
 (function (EChoreStatus) {
     EChoreStatus["Completed"] = "completed";
+    EChoreStatus["Approved"] = "approved";
     EChoreStatus["InProgress"] = "inprogress";
     EChoreStatus["Pending"] = "pending";
     EChoreStatus["All"] = "all";
-    EChoreStatus["Rejected"] = "rejected";
+    EChoreStatus["Denied"] = "denied";
     EChoreStatus["Unclaimed"] = "unclaimed";
 })(EChoreStatus || (EChoreStatus = {}));
 export var ExpenseStatus;

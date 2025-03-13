@@ -2,9 +2,6 @@ import mongoose, { Schema, model, ObjectId, Document } from "mongoose";
 import { EStatus,  EGender, ERole } from "../../models/enums.js";
 import bcrypt from "bcrypt"
 
-
- 
-
 export interface IUser extends Document {
   firstName: string;
   lastName: string;

@@ -1,5 +1,5 @@
  
-import { AuthenticatedRequest } from "../../models/AuthenticatedUser.js";
+import { AuthenticatedRequest } from "../../models/authenticatedUser.js";
 import { check_if_user_or_kid_exists } from "../../utils/check_user_exists.utils.js";
 import {status_codes} from "../../utils/status_constants.js";
 import { NextFunction, Request, Response } from "express";

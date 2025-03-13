@@ -1,186 +1,91 @@
 import { status_codes } from "../../utils/status_constants.js";
 import SavingService from "./saving.service.js";
 import { Kid } from "../users/user.model.js";
+import asyncHandler from "express-async-handler";
+import { BadRequestError, NotFoundError, UnauthorizedError, UnprocessableEntityError, } from "../../models/errors.js";
 class SavingController {
-    static async CreateSaving(req, res) {
-        try {
-            const kid = await Kid.findById(req.user);
-            if (!kid) {
-                res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-                    status: 401,
-                    success: false,
-                    message: "Unauthorized access",
-                });
-                return;
-            }
-            if (!req.body) {
-                res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-                    status: 422,
-                    success: false,
-                    message: "Unprocessible entity",
-                });
-                return;
-            }
-            const saving = await SavingService.createSaving(req.body, kid._id);
-            if (!saving) {
-                res.status(status_codes.HTTP_404_NOT_FOUND).json({
-                    status: 404,
-                    success: false,
-                    message: "Error occurred while creating the saving. Saving not found."
-                });
-                return;
-            }
-            res.status(status_codes.HTTP_201_CREATED).json({
-                status: 201,
-                success: true,
-                message: "Saving created successfully.",
-                data: saving
-            });
-            return;
+    static CreateSaving = asyncHandler(async (req, res) => {
+        const kid = await Kid.findById(req.user);
+        if (!kid) {
+            throw new UnauthorizedError("Unauthorized access");
         }
-        catch (error) {
-            res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-                status: 500,
-                success: false,
-                message: "Internal server error",
-                error: error?.message || 'An unexpected error occurred.',
-            });
-            return;
+        if (!req.body) {
+            throw new UnprocessableEntityError("Unprocessable request body");
         }
-    }
-    static async FetchSaving(req, res) {
-        try {
-            const kid = await Kid.findById(req.user);
-            if (!kid) {
-                res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-                    status: 401,
-                    success: false,
-                    message: "Unauthorized access",
-                });
-                return;
-            }
-            const { id } = req.params;
-            if (!id) {
-                res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-                    status: 400,
-                    success: false,
-                    message: "Please provide a valid Id!",
-                });
-                return;
-            }
-            const saving = await SavingService.fetchSaving(id, kid._id);
-            if (!saving) {
-                res.status(status_codes.HTTP_404_NOT_FOUND).json({
-                    status: 404,
-                    success: false,
-                    message: "Saving not found."
-                });
-                return;
-            }
-            res.status(status_codes.HTTP_200_OK).json({
-                status: 200,
-                success: true,
-                message: "Saving fetched successfully.",
-                data: saving
-            });
-            return;
+        const saving = await SavingService.createSaving(req.body, kid._id);
+        if (!saving) {
+            throw new NotFoundError("Saving not found!");
         }
-        catch (error) {
-            res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-                status: 500,
-                success: false,
-                message: "Internal server error",
-                error: error?.message || 'An unexpected error occurred.',
-            });
-            return;
+        res.status(status_codes.HTTP_201_CREATED).json({
+            status: 201,
+            success: true,
+            message: "Saving created successfully.",
+            data: saving,
+        });
+        return;
+    });
+    static FetchSaving = asyncHandler(async (req, res) => {
+        const kid = await Kid.findById(req.user);
+        if (!kid) {
+            throw new UnauthorizedError("Unauthorized access");
         }
-    }
-    static async FetchAllSavings(req, res) {
-        try {
-            const kid = await Kid.findById(req.user);
-            if (!kid) {
-                res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-                    status: 401,
-                    success: false,
-                    message: "Unauthorized access",
-                });
-                return;
-            }
-            const page = Number(req.query.page) || 1;
-            const limit = Number(req.query.limit) || 10;
-            const savings = await SavingService.fetchAllSavings(kid._id, page, limit);
-            if (savings.result === 0) {
-                res.status(status_codes.HTTP_404_NOT_FOUND).json({
-                    status: 404,
-                    success: false,
-                    message: "No savings found."
-                });
-                return;
-            }
-            res.status(status_codes.HTTP_200_OK).json({
-                status: 200,
-                success: true,
-                message: "Savings fetched successfully.",
-                result: {
-                    data: savings.result,
-                    pagination: savings.pagination
-                }
-            });
+        const { id } = req.params;
+        if (!id) {
+            throw new BadRequestError("Please provide a valid id");
         }
-        catch (error) {
-            res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-                status: 500,
-                success: false,
-                message: "Internal server error",
-                error: error?.message || 'An unexpected error occurred.',
-            });
+        const saving = await SavingService.fetchSaving(id, kid._id);
+        if (!saving) {
+            throw new NotFoundError("Saving not found!");
         }
-    }
-    static async DeleteSaving(req, res) {
-        try {
-            const kid = await Kid.findById(req.user);
-            if (!kid) {
-                res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-                    status: 401,
-                    success: false,
-                    message: "Unauthorized access",
-                });
-                return;
-            }
-            const { id } = req.params;
-            if (!id) {
-                res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-                    status: 400,
-                    success: false,
-                    message: "Please provide a valid Saving ID!"
-                });
-                return;
-            }
-            const saving = await SavingService.deleteSaving(id, kid._id);
-            if (!saving) {
-                res.status(status_codes.HTTP_404_NOT_FOUND).json({
-                    status: 404,
-                    success: false,
-                    message: "Saving not found or already deleted."
-                });
-                return;
-            }
-            res.status(status_codes.HTTP_204_NO_CONTENT).json({
-                status: 204,
-                success: true,
-                message: "Saving deleted successfully.",
-            });
-            return;
+        res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            message: "Saving fetched successfully.",
+            data: saving,
+        });
+        return;
+    });
+    static FetchAllSavings = asyncHandler(async (req, res) => {
+        const kid = await Kid.findById(req.user);
+        if (!kid) {
+            throw new UnauthorizedError("Unauthorized access");
         }
-        catch (error) {
-            res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-                status: 500,
-                success: false,
-                message: "Internal server error",
-                error: error?.message || 'An unexpected error occurred.',
-            });
-            return;
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const savings = await SavingService.fetchAllSavings(kid._id, page, limit);
+        if (savings.result === 0) {
+            throw new NotFoundError("No savings found!");
         }
-    }
+        res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            message: "Savings fetched successfully.",
+            result: {
+                data: savings.result,
+                pagination: savings.pagination,
+            },
+        });
+        return;
+    });
+    static DeleteSaving = asyncHandler(async (req, res) => {
+        const kid = await Kid.findById(req.user);
+        if (!kid) {
+            throw new UnauthorizedError("Unauthorized access");
+        }
+        const { id } = req.params;
+        if (!id) {
+            throw new BadRequestError("Please provide a valid id");
+        }
+        const saving = await SavingService.deleteSaving(id, kid._id);
+        if (!saving) {
+            throw new NotFoundError("Saving not found!");
+        }
+        res.status(status_codes.HTTP_204_NO_CONTENT).json({
+            status: 204,
+            success: true,
+            message: "Saving deleted successfully.",
+        });
+        return;
+    });
 }
 export default SavingController;

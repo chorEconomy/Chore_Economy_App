@@ -4,7 +4,10 @@ export default function calculateEndDate(
     savingsPerPeriod: number,
     frequency: "weekly" | "biweekly" | "monthly"
   ): string {
-    let start = new Date(startDate);
+  let start = new Date(startDate);
+  if (isNaN(start.getTime())) {
+    throw new Error("Invalid start date value");
+}
     let periods = Math.ceil(goalAmount / savingsPerPeriod);
   
     if (frequency === "weekly") {

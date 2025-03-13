@@ -5,8 +5,8 @@ import expenseRouter from "./modules/expenses/expense.routes.js";
 import paymentRouter from "./modules/payments/payment.route.js";
 import { status_codes } from "./utils/status_constants.js";
 import savingsRouter from "./modules/savings/saving.routes.js";
+import { globalErrorHandler } from "./middlewares/global-error-middleware.js";
 // import cors from "cors"
-// import globalErrorHandler from "./middlewares/globalErrorHandler";
 const app = express();
 //==================MIDDLEWARES=================
 app.use(express.json());
@@ -23,7 +23,6 @@ app.use("/api/v1/chores", choreRouter);
 app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/savings", savingsRouter);
 app.use("/api/v1/payments", paymentRouter);
-// Controlling when a user try to hit on any undefined route or path....
 app.use("*", (req, res, next) => {
     res.status(status_codes.HTTP_404_NOT_FOUND).json({
         status: 404,
@@ -31,5 +30,5 @@ app.use("*", (req, res, next) => {
         message: `Can't find ${req.originalUrl} on the server!`
     });
 });
-// app.use(globalErrorHandler);
+app.use(globalErrorHandler);
 export default app;
