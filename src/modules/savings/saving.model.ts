@@ -11,13 +11,6 @@ interface ISaving extends Document{
     amountFrequency: number
 }
 
-interface ISavingGoal extends Document {
-    category: string
-    icon: string
-    iconName: string
-    name: string
-}
-
 const savingSchema: Schema = new Schema<ISaving>({
     kidId: { type: mongoose.Schema.Types.ObjectId, ref: "Kid", default: null },
     endDate: { type: Date, required: [true, 'End Date is a required field'], default: null },

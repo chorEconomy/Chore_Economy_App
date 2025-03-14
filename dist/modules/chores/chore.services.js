@@ -6,6 +6,7 @@ import sendNotification from "../../utils/notifications.js";
 import paginate from "../../utils/paginate.js";
 import toTitleCase from "../../utils/string_formatter.js";
 import { BadRequestError, NotFoundError } from "../../models/errors.js";
+
 class ChoreService {
     static async createChore(parent, body, file) {
         const { title, description, earn, dueDate } = body;
@@ -110,7 +111,7 @@ class ChoreService {
         if (!chore) {
             throw new NotFoundError("Chore not found");
         }
-        
+
          if (chore.status !== EChoreStatus.Completed) {
               throw new BadRequestError("Chore has been completed!");
          }

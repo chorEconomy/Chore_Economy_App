@@ -166,7 +166,7 @@ class ChoreService {
       throw new NotFoundError("Chore not found");
     }
 
-    if (chore.status !== EChoreStatus.Completed) {
+    if (chore.status === EChoreStatus.Pending) {
       throw new BadRequestError("Chore has been completed!");
     }
 
