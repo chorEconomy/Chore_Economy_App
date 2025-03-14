@@ -112,8 +112,8 @@ class ChoreService {
             throw new NotFoundError("Chore not found");
         }
 
-         if (chore.status !== EChoreStatus.Completed) {
-              throw new BadRequestError("Chore has been completed!");
+         if (chore.status === EChoreStatus.Pending) {
+              throw new BadRequestError("Chore has already been completed!");
          }
         
         if (chore.kidId.toString() !== kid._id.toString()) {
