@@ -113,7 +113,13 @@ class ChoreService {
 
   static async approveChore(parent: any, id: any) {
     const chore: any = await Chore.findOne({ _id: id, parentId: parent._id });
+    if (!chore) {
+      throw new NotFoundError("Chore not found");
+    }
 
+    if (chore.status === EChoreStatus.Approved) {
+      throw new BadRequestError("Chore has already been approved!");
+    }
     if (chore.status !== EChoreStatus.Pending) {
       throw new BadRequestError("Chore has not been completed yet!");
     }
@@ -159,7 +165,6 @@ class ChoreService {
   }
 
   static async completeChore(kid: any, choreId: any, files: any) {
-
     const chore = await Chore.findOne({ _id: choreId, kidId: kid._id });
 
     if (!chore) {
@@ -210,37 +215,36 @@ class ChoreService {
   }
 
   static async denyChore(parent: any, choreId: any, reason: string) {
-      
-      const chore = await Chore.findOne({ _id: choreId, parentId: parent._id });
+    const chore = await Chore.findOne({ _id: choreId, parentId: parent._id });
 
-      if (!chore) {
-        throw new NotFoundError("Chore not found");
-      }
+    if (!chore) {
+      throw new NotFoundError("Chore not found");
+    }
 
-      if (chore.parentId.toString() !== parent._id.toString()) {
-       throw new BadRequestError("You are not allowed to deny this chore");
-      }
+    if (chore.parentId.toString() !== parent._id.toString()) {
+      throw new BadRequestError("You are not allowed to deny this chore");
+    }
 
-      chore.denialReason = reason || "No reason provided";
-      
-      chore.status = EChoreStatus.Denied;
-    
-      await chore.save();
+    chore.denialReason = reason || "No reason provided";
 
-      const kid = await Kid.findById(chore.kidId);
+    chore.status = EChoreStatus.Denied;
 
-      if (!kid) {
-        throw new NotFoundError("Kid not found");
-      }
+    await chore.save();
 
-      await sendNotification(
-        kid.fcmToken,
-        "Chore Rejected",
-        "Your parent has rejected your completed chore. Please review and try again."
+    const kid = await Kid.findById(chore.kidId);
+
+    if (!kid) {
+      throw new NotFoundError("Kid not found");
+    }
+
+    await sendNotification(
+      kid.fcmToken,
+      "Chore Rejected",
+      "Your parent has rejected your completed chore. Please review and try again."
     );
-    
-    return chore
-  } 
+
+    return chore;
+  }
 }
 
 export default ChoreService;

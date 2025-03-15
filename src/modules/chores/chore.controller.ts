@@ -150,7 +150,7 @@ class ChoreController {
 
   static approveChore = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
-      const parent = User.findById(req.user);
+      const parent = await User.findById(req.user);
 
       if (!parent) {
         throw new UnauthorizedError("Unauthorized access");

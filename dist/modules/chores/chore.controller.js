@@ -88,18 +88,19 @@ class ChoreController {
         return;
     });
     static approveChore = asyncHandler(async (req, res, next) => {
-        const parent = User.findById(req.user);
+        const parent = await User.findById(req.user);
+        console.log(parent);
+        
         if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
         }
         const { id } = req.params;
+        console.log(id);
         if (!id) {
             throw new BadRequestError("Please provide a valid chore id");
         }
         const chore = await ChoreService.approveChore(parent, id);
-        if (!chore) {
-            throw new NotFoundError("Chore not found");
-        }
+ 
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,

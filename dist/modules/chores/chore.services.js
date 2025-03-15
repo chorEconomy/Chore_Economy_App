@@ -78,8 +78,16 @@ class ChoreService {
         const chore = await Chore.findOne(filter);
         return chore;
     }
+
     static async approveChore(parent, id) {
         const chore = await Chore.findOne({ _id: id, parentId: parent._id });
+        if (!chore) {
+            throw new NotFoundError("Chore not found");
+        }
+
+        if (chore.status === EChoreStatus.Approved) {
+            throw new BadRequestError("Chore has already been approved!");
+        }
         if (chore.status !== EChoreStatus.Pending) {
             throw new BadRequestError("Chore has not been completed yet!");
         }
