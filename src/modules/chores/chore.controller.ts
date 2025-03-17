@@ -172,7 +172,6 @@ class ChoreController {
         status: 200,
         success: true,
         message: "Chore approved successfully",
-        data: chore,
       });
 
       return;
@@ -203,8 +202,8 @@ class ChoreController {
 
   static  denyChore = asyncHandler(async (req: Request, res: Response, next: NextFunction)=> {
    
-    const parentId = req.user;
-          if (!parentId) {
+    const parent = await User.findById(req.user)
+    if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
     }
 
