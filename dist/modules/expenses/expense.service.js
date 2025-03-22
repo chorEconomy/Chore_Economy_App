@@ -1,6 +1,9 @@
 import { Expense } from "./expense.model.js";
-import { ERole } from "../../models/enums.js";
+import { ERole, ETransactionName, ExpenseStatus } from "../../models/enums.js";
 import paginate from "../../utils/paginate.js";
+import WalletService from "../wallets/wallet.service.js";
+import { NotFoundError } from "../../models/errors.js";
+import { Wallet } from "../wallets/wallet.model.js";
 class ExpenseService {
     static async createExpense(parent, body) {
         const { name, amount, dueDate, description } = body;
@@ -39,6 +42,21 @@ class ExpenseService {
             throw new Error("Invalid Role");
         }
         return await paginate(Expense, page, limit, "", filter);
+    }
+    static async payExpense(kid, expenseId) {
+        const expense = await Expense.findOne({ kidId: kid._id, _id: expenseId });
+        if (!expense) {
+            throw new Error("Expense not found");
+        }
+        const wallet = await Wallet.findOne({ kid: kid._id });
+        if (!wallet) {
+            throw new NotFoundError("Wallet not found");
+        }
+        await WalletService.deductFunds(kid, expense.amount, "Expense Payment", ETransactionName.ExpensePayment);
+        expense.status = ExpenseStatus.Paid;
+        await expense.save();
+        // Credit the parent's account (if needed)
+        return { wallet, expense };
     }
 }
 export default ExpenseService;

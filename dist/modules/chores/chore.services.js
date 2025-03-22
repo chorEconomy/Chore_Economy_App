@@ -6,7 +6,6 @@ import sendNotification from "../../utils/notifications.js";
 import paginate from "../../utils/paginate.js";
 import toTitleCase from "../../utils/string_formatter.js";
 import { BadRequestError, NotFoundError } from "../../models/errors.js";
-
 class ChoreService {
     static async createChore(parent, body, file) {
         const { title, description, earn, dueDate } = body;
@@ -78,13 +77,11 @@ class ChoreService {
         const chore = await Chore.findOne(filter);
         return chore;
     }
-
     static async approveChore(parent, id) {
         const chore = await Chore.findOne({ _id: id, parentId: parent._id });
         if (!chore) {
             throw new NotFoundError("Chore not found");
         }
-
         if (chore.status === EChoreStatus.Approved) {
             throw new BadRequestError("Chore has already been approved!");
         }
@@ -119,11 +116,9 @@ class ChoreService {
         if (!chore) {
             throw new NotFoundError("Chore not found");
         }
-
-         if (chore.status === EChoreStatus.Pending) {
-              throw new BadRequestError("Chore has already been completed!");
-         }
-        
+        if (chore.status === EChoreStatus.Pending) {
+            throw new BadRequestError("Chore has been completed!");
+        }
         if (chore.kidId.toString() !== kid._id.toString()) {
             throw new BadRequestError("You are not allowed to complete this chore");
         }

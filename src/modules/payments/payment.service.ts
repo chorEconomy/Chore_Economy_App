@@ -1,16 +1,16 @@
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
-import { Kid, User } from "../users/user.model";
-import { Chore } from "../chores/chore.model";
+import { Kid, User } from "../users/user.model.js";
+import { Chore } from "../chores/chore.model.js";
 
 import {
   EChoreStatus,
   ETransactionName, 
-} from "../../models/enums";
-import WalletService from "../wallets/wallet.service";
-import { PaymentSchedule } from "./payment.module";
-import { BadRequestError, NotFoundError } from "../../models/errors";
-import sendNotification from "../../utils/notifications"; 
+} from "../../models/enums.js";
+import WalletService from "../wallets/wallet.service.js";
+import { PaymentSchedule } from "./payment.module.js";
+import { BadRequestError, NotFoundError } from "../../models/errors.js";
+import sendNotification from "../../utils/notifications.js"; 
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);

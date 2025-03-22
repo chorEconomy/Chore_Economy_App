@@ -1,5 +1,5 @@
-import paginate from '../../utils/paginate';
-import LedgerTransaction from './ledger.model';
+import paginate from '../../utils/paginate.js';
+import LedgerTransaction from './ledger.model.js';
 
 class LedgerTransactionService {
     static async FetchLedgerTransactions(kid: any, page: number, limit: number) {

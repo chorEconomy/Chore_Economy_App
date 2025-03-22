@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { ETransactionName, ETransactionType } from "../../models/enums";
+import { ETransactionName, ETransactionType } from "../../models/enums.js";
 
 export interface ILedgerTransaction extends mongoose.Document {
   wallet: mongoose.Schema.Types.ObjectId;

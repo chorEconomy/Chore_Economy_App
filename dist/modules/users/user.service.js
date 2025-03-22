@@ -9,6 +9,8 @@ import RefreshToken from "./refresh.token.model.js";
 import comparePassword from "../../utils/compare_password.js";
 import { uploadSingleFile } from "../../utils/file_upload.utils.js";
 import bcrypt from 'bcrypt';
+import { Wallet } from "../wallets/wallet.model.js";
+
 export class AuthService {
     static async register(reqBody, imageUrl) {
         const { first_name, last_name, email, password, gender, country, phone_number, } = reqBody;
@@ -533,6 +535,11 @@ export class AuthService {
                 status: EStatus.Active
             });
             await newKid.save();
+            const wallet = await new Wallet({
+                kid: newKid._id,
+                balance: 0
+            });
+            await wallet.save();
             return res
                 .status(status_codes.HTTP_201_CREATED)
                 .json({

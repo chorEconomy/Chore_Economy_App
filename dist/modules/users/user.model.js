@@ -12,6 +12,7 @@ const userSchema = new Schema({
     phoneNumber: { type: String, required: [true, 'Phone number is a required field'], unique: true },
     isVerified: { type: Boolean, default: false },
     fcmToken: { type: String, default: null },
+    canCreate: { type: Boolean, default: true },
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     lastLogin: { type: Date, default: Date.now },

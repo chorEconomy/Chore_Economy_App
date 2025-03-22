@@ -37,3 +37,21 @@ export var ESavingSchedule;
     ESavingSchedule["BiWeekly"] = "biweekly";
     ESavingSchedule["Monthly"] = "monthly";
 })(ESavingSchedule || (ESavingSchedule = {}));
+export var EPaymentSchedule;
+(function (EPaymentSchedule) {
+    EPaymentSchedule["Weekly"] = "weekly";
+    EPaymentSchedule["BiWeekly"] = "biweekly";
+    EPaymentSchedule["Monthly"] = "monthly";
+})(EPaymentSchedule || (EPaymentSchedule = {}));
+export var ETransactionType;
+(function (ETransactionType) {
+    ETransactionType["Credit"] = "credit";
+    ETransactionType["Debit"] = "debit";
+})(ETransactionType || (ETransactionType = {}));
+export var ETransactionName;
+(function (ETransactionName) {
+    ETransactionName["ChorePayment"] = "chorePayment";
+    ETransactionName["ExpensePayment"] = "expensePayment";
+    ETransactionName["SavingsDeposit"] = "savingsDeposit";
+    ETransactionName["Withdrawal"] = "withdrawal";
+})(ETransactionName || (ETransactionName = {}));

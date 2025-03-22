@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { AuthService } from "./user.service";
+import { AuthService } from "./user.service.js";
  
 
 

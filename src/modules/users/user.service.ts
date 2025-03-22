@@ -27,7 +27,7 @@ import { uploadSingleFile } from "../../utils/file_upload.utils";
 import sendNotification from "../../utils/notifications";
 import bcrypt from 'bcrypt';
 import CustomRequest from "../../models/CustomRequest";
-import Wallet from "../wallets/wallet.model";
+import { Wallet } from "../wallets/wallet.model";
 
 
 export class AuthService {
