@@ -6,10 +6,12 @@ import { EChoreStatus } from "../../models/enums.js";
 import asyncHandler from "express-async-handler";
 import {
   BadRequestError,
+  ForbiddenError,
   NotFoundError,
   UnauthorizedError,
   UnprocessableEntityError,
 } from "../../models/errors.js";
+import sendNotification from "../../utils/notifications.js";
 
 class ChoreController {
   static createChore = asyncHandler(
@@ -18,6 +20,17 @@ class ChoreController {
 
       if (!parent) {
         throw new UnauthorizedError("Unauthorized access");
+      }
+
+      if (!parent.canCreate) {
+        await sendNotification(
+          parent.fcmToken,
+          "Payment Overdue",
+          `You cannot create new chores until you complete your overdue payment.`
+        );
+        throw new ForbiddenError(
+          "You cannot create new chores until you complete your overdue payment."
+        );
       }
 
       if (!req.body) {
@@ -120,24 +133,20 @@ class ChoreController {
   );
 
   static completeChore = asyncHandler(
-    async (
-      req: Request,
-      res: Response,
-      next: NextFunction
-    ) => {
+    async (req: Request, res: Response, next: NextFunction) => {
       const kid = await Kid.findById(req.user);
       if (!kid) {
         throw new UnauthorizedError("Unauthorized access");
       }
-  
+
       const choreId = req.params.id;
-  
+
       if (!choreId) {
         throw new BadRequestError("Please provide a valid chore id");
       }
-  
+
       const chore = await ChoreService.completeChore(kid, choreId, req.files);
-  
+
       res.status(status_codes.HTTP_200_OK).json({
         status: 200,
         success: true,
@@ -146,7 +155,7 @@ class ChoreController {
       });
       return;
     }
-  )
+  );
 
   static approveChore = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
@@ -200,26 +209,32 @@ class ChoreController {
     }
   );
 
-  static  denyChore = asyncHandler(async (req: Request, res: Response, next: NextFunction)=> {
-   
-    const parent = await User.findById(req.user)
-    if (!parent) {
-            throw new UnauthorizedError("Unauthorized access");
-    }
+  static denyChore = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parent = await User.findById(req.user);
+      if (!parent) {
+        throw new UnauthorizedError("Unauthorized access");
+      }
 
-    if (!req.body) {
-      throw new UnprocessableEntityError("Please provide the required fields");
-    }
+      if (!req.body) {
+        throw new UnprocessableEntityError(
+          "Please provide the required fields"
+        );
+      }
 
-    const choreId = req.params.id;
+      const choreId = req.params.id;
 
-    if (!choreId) {
-      throw new BadRequestError("Please provide a valid chore id");
-    } 
+      if (!choreId) {
+        throw new BadRequestError("Please provide a valid chore id");
+      }
 
-    const chore = await ChoreService.denyChore(parent, choreId, req.body.reason);
+      const chore = await ChoreService.denyChore(
+        parent,
+        choreId,
+        req.body.reason
+      );
 
-  res.status(status_codes.HTTP_200_OK).json({
+      res.status(status_codes.HTTP_200_OK).json({
         status: 200,
         success: true,
         message: "Chore has been denied",
@@ -229,8 +244,9 @@ class ChoreController {
           denialReason: chore.denialReason,
         },
       });
-    return;
-  })
+      return;
+    }
+  );
 }
 
 export default ChoreController;

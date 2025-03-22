@@ -37,6 +37,12 @@ export enum ESavingSchedule {
   Monthly = "monthly"
 } 
 
+export enum EPaymentSchedule {
+  Weekly = "weekly",
+  BiWeekly = "biweekly",
+  Monthly = "monthly"
+} 
+
 export enum ETransactionType {
   Credit = "credit",
   Debit = "debit"   
@@ -44,7 +50,7 @@ export enum ETransactionType {
 
 export enum ETransactionName { 
   ChorePayment = "chorePayment",
-  Expense = "expense",
+  ExpensePayment = "expensePayment",
   SavingsDeposit = "savingsDeposit",
   Withdrawal = "withdrawal"
 }

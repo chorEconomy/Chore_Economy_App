@@ -7,9 +7,11 @@ import { EChoreStatus, ExpenseStatus } from "../../models/enums.js";
 import asyncHandler from "express-async-handler";
 import {
   BadRequestError,
+  ForbiddenError,
   UnauthorizedError,
   UnprocessableEntityError,
 } from "../../models/errors.js";
+import sendNotification from "../../utils/notifications.js";
 
 class ExpenseController {
   static createExpense = asyncHandler(async(req: Request, res: Response, next: NextFunction) => {
@@ -19,6 +21,15 @@ class ExpenseController {
       throw new UnauthorizedError("Unauthorized access");
     }
 
+    if (!parent.canCreate) {
+       await sendNotification(
+                parent.fcmToken,
+                "Payment Overdue",
+                `You cannot create new expenses until you complete your overdue payment.`
+              );
+        throw new ForbiddenError("You cannot create new expenses until you complete your overdue payment.");
+    }
+    
     if (!req.body) {
       throw new UnprocessableEntityError("Please provide the required fields");
     }
@@ -83,6 +94,32 @@ class ExpenseController {
       return;
     }
   );
+
+  static PayExpense = asyncHandler(
+    async (req: Request, res: Response) => {
+
+      const kid = await Kid.findById(req.user);
+      
+      if (!kid) {
+        throw new UnauthorizedError("Unauthorized access");
+      }
+
+      const { expenseId } = req.body;
+      
+      if (!expenseId) {
+        throw new BadRequestError("Expense ID is required")
+      }
+
+      const result = await ExpenseService.payExpense(kid, expenseId);
+  
+      res.status(status_codes.HTTP_200_OK).json({
+        success: true, 
+        status: 200,
+        data: result
+      });
+      return;
+    }
+  )
 }
 
 export default ExpenseController;

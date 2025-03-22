@@ -1,18 +1,38 @@
 import mongoose, { Schema, model, ObjectId, Document } from "mongoose";
+import { EPaymentSchedule } from "../../models/enums";
 
-interface IKidAccount extends Document {
-  kidId: ObjectId; // Reference to the Parent (User)
-  accountBalance: number
-  earnings: number
+interface IPaymentSchedule extends Document {
+  parent: ObjectId;
+  scheduleType: string;
+  startDate: Date;
+  nextPaymentDate: Date;
+  status: string;
 }
 
-const kidAccountSchema: Schema = new Schema<IKidAccount>({
-    kidId: { type: mongoose.Schema.Types.ObjectId, ref: "Kid", required: true },
-    accountBalance: {type: Number, required: [true, 'Earn is a required field'], default: 0},
-    earnings: { type: Number, required: [true, 'Earn is a required field'], default: 0 },
-},
-    { timestamps: true }
-)
+const paymentScheduleSchema: Schema = new Schema<IPaymentSchedule>({
+  parent: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "User", 
+    required: true 
+  },
+  scheduleType: { 
+    type: String, 
+    enum: Object.values(EPaymentSchedule),
+    required: true 
+  },
+  startDate: { 
+    type: Date, 
+    required: true 
+  },
+  nextPaymentDate: { 
+    type: Date, 
+    required: true 
+  },
+  status: { 
+    type: String, 
+    enum: ["active", "inactive"], 
+    default: "active" 
+  },
+}, { timestamps: true });
 
-
-export const KidAccount = model<IKidAccount>("KidAccount", kidAccountSchema)
+export const PaymentSchedule = mongoose.model("PaymentSchedule", paymentScheduleSchema);

@@ -11,6 +11,7 @@ export interface IUser extends Document {
   isVerified: boolean;
   gender: EGender;
   fcmToken: string
+  canCreate: boolean;
   photo: string | null;
   phoneNumber: string;
   role: ERole;
@@ -30,6 +31,7 @@ interface IKid extends Document {
   role: ERole;
   earnings: number;
   fcmToken: string;
+  
   photo?: string; // Optional field
   status: EStatus;
   createdAt: Date;
@@ -47,7 +49,8 @@ const userSchema: Schema = new Schema<IUser>(
     photo: { type: String, default: null },
     phoneNumber: { type: String, required: [true, 'Phone number is a required field'], unique: true },
     isVerified: { type: Boolean, default: false },
-    fcmToken: {type: String, default: null},
+    fcmToken: { type: String, default: null },
+    canCreate: { type: Boolean, default: true },
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     lastLogin: {type: Date, default: Date.now},

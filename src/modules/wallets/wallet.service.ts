@@ -1,7 +1,7 @@
-import Wallet from './wallet.model';
 import LedgerTransaction from '../ledgers/ledger.model';
 import { ETransactionType } from '../../models/enums';
-import { BadRequestError, NotFoundError } from '../../models/errors';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../../models/errors';
+import { Wallet } from './wallet.model';
 
 class WalletService {
 
@@ -14,6 +14,7 @@ class WalletService {
         }
         
         wallet.balance += amount;
+        wallet.totalEarnings += amount;
         await wallet.save();
 
         const transaction = new LedgerTransaction({
@@ -39,7 +40,7 @@ class WalletService {
         }
 
         if (wallet.balance < amount) {
-            throw new BadRequestError("Insufficient funds");
+            throw new ForbiddenError("Insufficient funds");
         }
         
         wallet.balance -= amount;

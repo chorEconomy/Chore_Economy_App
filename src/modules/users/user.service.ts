@@ -27,6 +27,7 @@ import { uploadSingleFile } from "../../utils/file_upload.utils";
 import sendNotification from "../../utils/notifications";
 import bcrypt from 'bcrypt';
 import CustomRequest from "../../models/CustomRequest";
+import Wallet from "../wallets/wallet.model";
 
 
 export class AuthService {
@@ -663,6 +664,13 @@ static async ResetPassword(req: Request, res: Response) {
       });
 
       await newKid.save();
+
+      const wallet = await new Wallet({
+        kid: newKid._id,
+        balance: 0
+      });
+
+      await wallet.save()
 
       return res
         .status(status_codes.HTTP_201_CREATED)
