@@ -225,12 +225,12 @@ class PaymentService {
     }
 
     // Create a new payment schedule
-    const paymentSchedule = new PaymentSchedule({
-      parentId,
-      scheduleType,
-      startDate,
-      nextDueDate,
-    });
+     const paymentSchedule = new PaymentSchedule({
+                parent: parentId,
+                scheduleType,
+                startDate,
+                nextPaymentDate: nextDueDate,
+            });
 
     await paymentSchedule.save();
 

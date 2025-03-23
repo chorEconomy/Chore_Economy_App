@@ -64,6 +64,7 @@ class PaymentService {
             off_session: true, // Allow payments without user interaction
             error_on_requires_action: true, // Fail if additional action is required
         });
+        
         return paymentIntent;
     }
     static async addFundsToWallet(kid, totalAmount) {
@@ -143,10 +144,10 @@ class PaymentService {
         }
         // Create a new payment schedule
         const paymentSchedule = new PaymentSchedule({
-            parentId,
+            parent: parentId,
             scheduleType,
             startDate,
-            nextDueDate,
+            nextPaymentDate: nextDueDate,
         });
         await paymentSchedule.save();
         return paymentSchedule;
