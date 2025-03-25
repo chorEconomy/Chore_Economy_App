@@ -2,11 +2,11 @@ import { Request, Response } from "express";
 import { status_codes } from "../../utils/status_constants.js";
 import PaymentService from "./payment.service.js";
 import asyncHandler from "express-async-handler";
-import {
-   BadRequestError,
-  UnauthorizedError,
-} from "../../models/errors.js";
-import {Kid, User } from "../users/user.model.js"; 
+import { BadRequestError, UnauthorizedError } from "../../models/errors.js";
+import { Kid, User } from "../users/user.model.js";
+import dotenv from "dotenv";
+dotenv.config();
+const CRON_SECRET = process.env.CRON_SECRET_KEY;
 
 class PaymentController {
   static GetKidsForPayment = asyncHandler(
@@ -25,21 +25,21 @@ class PaymentController {
         success: true,
         data: kidsWithChores,
       });
-        return;
+      return;
     }
   );
 
   static InitiatePayment = asyncHandler(async (req: Request, res: Response) => {
-     try {
+    try {
       const parent = await User.findById(req.user);
       if (!parent) {
         throw new UnauthorizedError("Unauthorized access");
-        }
-        
+      }
+
       const { kidId } = req.body;
       const paymentIntent = await PaymentService.processPayment(
         kidId,
-        parent._id,
+        parent._id
       );
 
       res.status(status_codes.HTTP_200_OK).json({
@@ -47,76 +47,82 @@ class PaymentController {
         success: true,
         data: paymentIntent,
       });
-        return;
+      return;
     } catch (error: any) {
       console.error("Payment error:", error);
       res.status(status_codes.HTTP_400_BAD_REQUEST).json({
         success: false,
         message: error.message,
       });
-        return;
+      return;
     }
   });
-   
-   
-   static SchedulePayment =  asyncHandler(
-      async (req: Request, res: Response) => {
-         const parent = await User.findById(req.user);
-         if (!parent) {
-           throw new UnauthorizedError("Unauthorized access");
-         }
-         const { scheduleType, startDate } = req.body;
 
-         if (!scheduleType || !startDate) {
-         throw new BadRequestError("All fields are required");
-       }
-   
-    
-        // Validate the start date format (YYYY-MM-DD)
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(startDate)) {
-          throw new BadRequestError("Invalid start date format. Use YYYY-MM-DD.");
-        }
-         
-         // Parse the start date
-         const start = new Date(startDate);
+  static SchedulePayment = asyncHandler(async (req: Request, res: Response) => {
+    const parent = await User.findById(req.user);
+    if (!parent) {
+      throw new UnauthorizedError("Unauthorized access");
+    }
+    const { scheduleType, startDate } = req.body;
 
-         // Check if the date is valid
-         if (isNaN(start.getTime())) {
-            throw new BadRequestError("Invalid start date.");
-         }
+    if (!scheduleType || !startDate) {
+      throw new BadRequestError("All fields are required");
+    }
 
-         // Check if the date is in the past
-         const today = new Date();
-         if (start < today) {
-            throw new BadRequestError("Start date cannot be in the past.");
-         }
-        const paymentSchedule = await PaymentService.createSchedule(
-          parent._id,
-          scheduleType,
-          startDate
-        );
-    
-        res.status(status_codes.HTTP_201_CREATED).json({
-          success: true,
-          data: paymentSchedule,
-        });
-         return;
-      }
+    // Validate the start date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(startDate)) {
+      throw new BadRequestError("Invalid start date format. Use YYYY-MM-DD.");
+    }
+
+    // Parse the start date
+    const start = new Date(startDate);
+
+    // Check if the date is valid
+    if (isNaN(start.getTime())) {
+      throw new BadRequestError("Invalid start date.");
+    }
+
+    // Check if the date is in the past
+    const today = new Date();
+    if (start < today) {
+      throw new BadRequestError("Start date cannot be in the past.");
+    }
+    const paymentSchedule = await PaymentService.createSchedule(
+      parent._id,
+      scheduleType,
+      startDate
     );
-   
-   static CheckOverduePayments = asyncHandler(
-      async (req: Request, res: Response) => {
-        const result = await PaymentService.checkDuePayments();
-         res.status(status_codes.HTTP_200_OK).json({
-            success: true,
-            data: result
-         });
-       return;
+
+    res.status(status_codes.HTTP_201_CREATED).json({
+      success: true,
+      data: paymentSchedule,
+    });
+    return;
+  });
+
+  static CheckOverduePayments = asyncHandler(
+    async (req: Request, res: Response) => {
+      if (req.headers["x-cron-secret"] !== CRON_SECRET) {
+        console.warn("Unauthorized cron attempt");
+        res.status(status_codes.HTTP_401_UNAUTHORIZED).json({ success: false });
+        return;
       }
-  )
-  
-  
+      try {
+        await PaymentService.checkDuePayments();
+        res.status(status_codes.HTTP_200_OK).json({
+          success: true,
+        });
+        return;
+      } catch (error: any) {
+        console.error("Cron job failed:", error);
+        res
+          .status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR)
+          .json({ success: false, error: error.message });
+        return;
+      }
+    }
+  );
 }
 
 export default PaymentController;

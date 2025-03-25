@@ -53,6 +53,7 @@ export var ETransactionName;
     ETransactionName["ChorePayment"] = "chorePayment";
     ETransactionName["ExpensePayment"] = "expensePayment";
     ETransactionName["SavingsDeposit"] = "savingsDeposit";
+    ETransactionName["SavingsContribution"] = "savingsContribution";
     ETransactionName["SavingsWithdrawal"] = "savingsWithdrawal";
     ETransactionName["Withdrawal"] = "withdrawal";
 })(ETransactionName || (ETransactionName = {}));

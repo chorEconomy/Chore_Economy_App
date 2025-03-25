@@ -9,11 +9,14 @@ import {
   UnauthorizedError,
   UnprocessableEntityError,
 } from "../../models/errors.js";
+import dotenv from "dotenv"
+dotenv.config()
+const CRON_SECRET = process.env.CRON_SECRET_KEY;
 
 class SavingController {
   static CreateSaving = asyncHandler(async (req: Request, res: Response) => {
      
-     const kid = await Kid.findById(req.user);
+     const kid: any = await Kid.findById(req.user);
        
     if (!kid) {
       throw new UnauthorizedError("Unauthorized access");
@@ -39,7 +42,7 @@ class SavingController {
   });
 
   static FetchSaving = asyncHandler(async(req: Request, res: Response) => {
-     const kid = await Kid.findById(req.user);
+     const kid: any = await Kid.findById(req.user);
        
      if (!kid) {
           throw new UnauthorizedError("Unauthorized access");
@@ -66,36 +69,8 @@ class SavingController {
      return;
  })
 
-  static FetchAllSavings = asyncHandler(async (req: Request, res: Response) => {
-     const kid = await Kid.findById(req.user);
-  
-       if (!kid) {
-          throw new UnauthorizedError("Unauthorized access");
-     }
-
-     const page = Number(req.query.page) || 1;
-     const limit = Number(req.query.limit) || 10;
-
-     const savings = await SavingService.fetchAllSavings(kid._id, page, limit);
-
-     if (savings.result === 0) {
-          throw new NotFoundError("No savings found!");
-     }
-
-     res.status(status_codes.HTTP_200_OK).json({
-       status: 200,
-       success: true,
-       message: "Savings fetched successfully.",
-       result: {
-         data: savings.result,
-         pagination: savings.pagination,
-       },
-     });
-     return;
- })
-
   static DeleteSaving = asyncHandler( async (req: Request, res: Response) => {
-     const kid = await Kid.findById(req.user);
+     const kid: any = await Kid.findById(req.user);
      if (!kid) {
           throw new UnauthorizedError("Unauthorized access");
      }
@@ -120,99 +95,103 @@ class SavingController {
      return;
   }) 
 
+
   static MakePayment = asyncHandler(async (req: Request, res: Response) => {
-    const kid = await Kid.findById(req.user);
+    const kid: any = await Kid.findById(req.user);
+
     if (!kid) {
-      throw new UnauthorizedError("Unauthorized access");
+         throw new UnauthorizedError("Unauthorized access");
     }
 
-    const { savingId, amount, isScheduledPayment } = req.body;
+    const {id} = req.params;
 
-    const result = await SavingService.makePayment(kid._id, savingId, amount, isScheduledPayment);
+    const {amount, isScheduledPayment } = req.body;
+
+    const result = await SavingService.addToSavings(kid._id, id, amount, isScheduledPayment);
+
     res.status(status_codes.HTTP_200_OK).json({
       status: 200,
       success: true,
       data: result
+    });
+    return
+  });
+  
+
+  static WithdrawFromSavings = asyncHandler(async (req: Request, res: Response) => {
+    const kid: any = await Kid.findById(req.user);
+
+    if (!kid) {
+         throw new UnauthorizedError("Unauthorized access");
+    }
+
+    const {savingId } = req.body;
+    
+    const result = await SavingService.withdrawFromSavings(kid._id, savingId);
+
+    res.status(status_codes.HTTP_200_OK).json({
+      status: 200,
+      success: true,
+      data: result
+    });
+    return
+  });
+  
+  static GetSavingsHistory = asyncHandler(async (req: Request, res: Response) => {
+    const kid: any = await Kid.findById(req.user);
+
+    if (!kid) {
+         throw new UnauthorizedError("Unauthorized access");
+    }
+
+    const { savingId } = req.params;
+    
+    const history = await SavingService.getSavingsHistory(kid._id, savingId);
+
+    res.status(status_codes.HTTP_200_OK).json({
+      status: 200,
+      success: true,
+      data: history
+    });
+    return
+  });
+  
+
+  static GetAllSavingsGoals = asyncHandler(async (req: Request, res: Response) => {
+    const kid: any = await Kid.findById(req.user);
+
+    if (!kid) {
+         throw new UnauthorizedError("Unauthorized access");
+    }
+
+    const savings = await SavingService.getAllSavingsGoals(kid._id);
+
+    res.status(status_codes.HTTP_200_OK).json({
+      status: 200,
+      success: true,
+      data: savings
     });
     return;
-  });
-  
-  static TopUpSavings = asyncHandler(async (req: Request, res: Response) => {
-    const kid = await Kid.findById(req.user);
-    if (!kid) {
-      throw new UnauthorizedError("Unauthorized access");
+});
+
+  static TriggerSavingsReminders = asyncHandler(
+    async (req: Request, res: Response) => {
+      if (req.headers["x-cron-secret"] !== CRON_SECRET) {
+        console.warn("Unauthorized cron attempt");
+        res.status(status_codes.HTTP_401_UNAUTHORIZED).json({ success: false });
+        return;
+      }
+      try {
+        await SavingService.checkAndSendReminders();
+        res.status(status_codes.HTTP_200_OK).json({ success: true });
+        return;
+      } catch (error: any) {
+        console.error("Cron job failed:", error);
+        res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({ success: false, error: error.message });
+        return
+      }
     }
-
-    const { savingId, amount } = req.body;
-
-    const result = await SavingService.makePayment(kid._id, savingId, amount, false);
-
-    res.status(status_codes.HTTP_200_OK).json({
-      success: true,
-      status: 200,
-      data: result
-    });
-    return 
-});
-
-static WithdrawFromSavings = asyncHandler(async (req: Request, res: Response) => {
-  const kid = await Kid.findById(req.user);
-
-  if (!kid) {
-    throw new UnauthorizedError("Unauthorized access");
-  }
-
-  const { savingId } = req.body;
-
-  const result = await SavingService.withdrawFromSavings(kid._id, savingId);
-
-  res.status(status_codes.HTTP_200_OK).json({
-    success: true,
-    status: 200,
-    data: result
-  });
-  return 
-});
-  
-static GetSavingsGoals = asyncHandler(async (req: Request, res: Response) => {
-  const kid = await Kid.findById(req.user);
-
-  if (!kid) {
-    throw new UnauthorizedError("Unauthorized access");
-  }
-
-  const savings = await SavingService.getSavingsProgress(kid._id);
-  res.status(status_codes.HTTP_200_OK).json({
-    success: true,
-    status: 200,
-    data: savings
-  });
-  return 
-});
-
-static GetPaymentHistory = asyncHandler(async (req: Request, res: Response) => {
-  const kid = await Kid.findById(req.user);
-
-  if (!kid) {
-    throw new UnauthorizedError("Unauthorized access");
-  }
-
-  const { savingId } = req.params;
-
-  if (!savingId) {
-    throw new BadRequestError("Please provide a valid saving id");
-  }
-
-  const history = await SavingService.getPaymentHistory(kid._id, savingId);
-
-  res.status(status_codes.HTTP_200_OK).json({
-    success: true,
-    status: 200,
-    data: history
-  });
-  return;
-});
-  
+  );
 }
 
 export default SavingController;

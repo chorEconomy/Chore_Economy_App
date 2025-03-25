@@ -1,8 +1,11 @@
 import { status_codes } from "../../utils/status_constants.js";
 import PaymentService from "./payment.service.js";
 import asyncHandler from "express-async-handler";
-import { BadRequestError, UnauthorizedError, } from "../../models/errors.js";
+import { BadRequestError, UnauthorizedError } from "../../models/errors.js";
 import { User } from "../users/user.model.js";
+import dotenv from "dotenv";
+dotenv.config();
+const CRON_SECRET = process.env.CRON_SECRET_KEY;
 class PaymentController {
     static GetKidsForPayment = asyncHandler(async (req, res) => {
         const parent = await User.findById(req.user);
@@ -74,12 +77,25 @@ class PaymentController {
         return;
     });
     static CheckOverduePayments = asyncHandler(async (req, res) => {
-        const result = await PaymentService.checkDuePayments();
-        res.status(status_codes.HTTP_200_OK).json({
-            success: true,
-            data: result
-        });
-        return;
+        if (req.headers["x-cron-secret"] !== CRON_SECRET) {
+            console.warn("Unauthorized cron attempt");
+            res.status(status_codes.HTTP_401_UNAUTHORIZED).json({ success: false });
+            return;
+        }
+        try {
+            await PaymentService.checkDuePayments();
+            res.status(status_codes.HTTP_200_OK).json({
+                success: true,
+            });
+            return;
+        }
+        catch (error) {
+            console.error("Cron job failed:", error);
+            res
+                .status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR)
+                .json({ success: false, error: error.message });
+            return;
+        }
     });
 }
 export default PaymentController;

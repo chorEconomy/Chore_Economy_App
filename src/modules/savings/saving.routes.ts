@@ -4,14 +4,14 @@ import express from "express"
 const savingsRouter = express.Router();
 
 savingsRouter.post("/", authorizeKid, SavingController.CreateSaving);
-savingsRouter.get("/:id", authorizeKid, SavingController.FetchSaving);
-savingsRouter.get("/", authorizeKid, SavingController.FetchAllSavings);
+savingsRouter.get("/:id", authorizeKid, SavingController.FetchSaving); 
 savingsRouter.delete("/:id", authorizeKid, SavingController.DeleteSaving);
-
-savingsRouter.post("/pay", authorizeKid, SavingController.MakePayment);
-savingsRouter.post("/topup", authorizeKid, SavingController.TopUpSavings);
+savingsRouter.post("/:id/pay", authorizeKid, SavingController.MakePayment);
 savingsRouter.post("/withdraw", authorizeKid, SavingController.WithdrawFromSavings);
-savingsRouter.get("/", authorizeKid, SavingController.GetSavingsGoals);
-savingsRouter.get("/:savingId/history", authorizeKid, SavingController.GetPaymentHistory);
+savingsRouter.get("/:id/history", authorizeKid, SavingController.GetSavingsHistory);
+savingsRouter.get("/", authorizeKid, SavingController.GetAllSavingsGoals);
+savingsRouter.get("/savings-reminders", SavingController.TriggerSavingsReminders);
+
+
 
 export default savingsRouter

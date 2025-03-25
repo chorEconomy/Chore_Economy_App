@@ -51,7 +51,7 @@ class PaymentService {
     return kidsWithChores;
   }
 
-  static async validateKidAndParent(kidId: any, parentId: any) {
+  private static async validateKidAndParent(kidId: any, parentId: any) {
     const kid = await Kid.findById(kidId);
     const parent = await User.findById(parentId);
 
@@ -65,7 +65,7 @@ class PaymentService {
     return kid;
   }
 
-  static async getApprovedChoresAndTotalAmount(kidId: any) {
+  private static async getApprovedChoresAndTotalAmount(kidId: any) {
     const approvedChores = await Chore.find({
       kidId: kidId,
       status: EChoreStatus.Approved,
@@ -83,7 +83,7 @@ class PaymentService {
     return { approvedChores, totalAmount };
   }
 
-  static async processStripePayment(
+  private static async processStripePayment(
     totalAmount: number
   ) {
     const paymentIntent = await stripe.paymentIntents.create({
@@ -94,7 +94,7 @@ class PaymentService {
     return paymentIntent;
   }
 
-  static async addFundsToWallet(kid: any, totalAmount: number) {
+  private static async addFundsToWallet(kid: any, totalAmount: number) {
     await WalletService.addFunds(
       kid,
       totalAmount,
@@ -103,14 +103,14 @@ class PaymentService {
     );
   }
 
-  static async markChoresAsCompleted(kidId: any) {
+  private static async markChoresAsCompleted(kidId: any) {
     await Chore.updateMany(
       { kidId: kidId, status: EChoreStatus.Approved },
       { status: EChoreStatus.Completed }
     );
   }
 
-  static async updateParentCanCreateFlag(parentId: any) {
+  private static async updateParentCanCreateFlag(parentId: any) {
     await User.findByIdAndUpdate(parentId, { canCreate: true });
   }
 

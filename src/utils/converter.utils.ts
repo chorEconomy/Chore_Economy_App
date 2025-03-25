@@ -1,41 +1,59 @@
 export default function calculateEndDate(
-    startDate: string,
-    goalAmount: number,
-    savingsPerPeriod: number,
-    frequency: "weekly" | "biweekly" | "monthly"
-  ): string {
-  let start = new Date(startDate);
+  startDate: string | Date,
+  goalAmount: number,
+  savingsPerPeriod: number,
+  frequency: "weekly" | "biweekly" | "monthly"
+): string {
+
+  if (typeof goalAmount !== "number" || goalAmount <= 0) {
+    throw new Error("Goal amount must be a positive number");
+  }
+
+  if (typeof savingsPerPeriod !== "number" || savingsPerPeriod <= 0) {
+    throw new Error("Savings per period must be a positive number");
+  }
+
+  // Parse start date
+  const start =
+    startDate instanceof Date ? new Date(startDate) : new Date(startDate);
   if (isNaN(start.getTime())) {
     throw new Error("Invalid start date value");
-}
-    let periods = Math.ceil(goalAmount / savingsPerPeriod);
-  
-    if (frequency === "weekly") {
-      start.setDate(start.getDate() + periods * 7);
-    } else if (frequency === "biweekly") {
-      start.setDate(start.getDate() + periods * 14);
-    } else if (frequency === "monthly") {
-      for (let i = 0; i < periods; i++) {
-        let currentMonth = start.getMonth();
-        start.setMonth(currentMonth + 1);
-  
-        // Handle cases where new month has fewer days than the current date
-        if (start.getDate() !== new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()) {
-          start.setDate(1); // Move to the first of the next month
-          start.setDate(start.getDate() - 1); // Adjust to last valid day
-        }
-      }
-    } else {
-      throw new Error("Invalid frequency. Use 'weekly', 'biweekly', or 'monthly'.");
-    }
-  
-    return start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
   }
-  
-  // Example Usage:
-  const startDate = "2024-01-31"; // January 31
-  const goalAmount = 1000;
-  const savingsPerPeriod = 50;
-  const frequency: "weekly" | "biweekly" | "monthly" = "monthly";
-  
-  
+
+  // Calculate number of periods needed
+  const periods = Math.ceil(goalAmount / savingsPerPeriod);
+
+  // Create a new date object to avoid modifying the original
+  const endDate = new Date(start);
+
+  // Calculate end date based on frequency
+  switch (frequency) {
+    case "weekly":
+      endDate.setDate(endDate.getDate() + periods * 7);
+      break;
+
+    case "biweekly":
+      endDate.setDate(endDate.getDate() + periods * 14);
+      break;
+
+    case "monthly":
+      // More reliable month addition
+      const originalDay = endDate.getDate();
+      endDate.setMonth(endDate.getMonth() + periods);
+
+      // Handle month overflow (e.g., Jan 31 + 1 month)
+      if (endDate.getDate() !== originalDay) {
+        endDate.setDate(0); // Move to last day of previous month
+      }
+      break;
+
+    default:
+      throw new Error(
+        "Invalid frequency. Use 'weekly', 'biweekly', or 'monthly'."
+      );
+  }
+
+  // Return formatted date (YYYY-MM-DD)
+  return endDate.toISOString().split("T")[0];
+}
+

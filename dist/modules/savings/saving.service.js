@@ -1,153 +1,224 @@
-import { ETransactionName, ETransactionType } from "../../models/enums.js";
+import { ESavingSchedule, ETransactionName, ETransactionType } from "../../models/enums.js";
 import calculateEndDate from "../../utils/converter.utils.js";
-import paginate from "../../utils/paginate.js";
+import { Kid } from "../users/user.model.js";
 import { Wallet } from "../wallets/wallet.model.js";
 import LedgerTransaction from "../ledgers/ledger.model.js";
-import { Saving } from "./saving.model.js";
-import { ForbiddenError, NotFoundError } from "../../models/errors.js";
+import { Saving, SavingsWallet } from "./saving.model.js";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../../models/errors.js";
+import mongoose from "mongoose";
+import WalletService from "../wallets/wallet.service.js";
+import sendNotification from "../../utils/notifications.js";
 class SavingService {
     static async createSaving(data, kidId) {
         const { title, startDate, totalSavingAmount, schedule, amountFrequency } = data;
-        const endDate = calculateEndDate(startDate, totalSavingAmount, amountFrequency, schedule);
+        if (!title || !startDate || !totalSavingAmount || !schedule || !amountFrequency) {
+            throw new BadRequestError("Missing required fields");
+        }
+        if (typeof totalSavingAmount !== 'number' || totalSavingAmount <= 0) {
+            throw new BadRequestError("Invalid savings amount");
+        }
+        if (typeof amountFrequency !== 'number' || amountFrequency <= 0) {
+            throw new BadRequestError("Invalid frequency amount");
+        }
+        const validSchedules = Object.values(ESavingSchedule);
+        if (!validSchedules.includes(schedule.toLowerCase())) {
+            throw new BadRequestError(`Invalid schedule type. Valid types are: ${validSchedules.join(', ')}`);
+        }
+        const endDate = calculateEndDate(startDate, totalSavingAmount, amountFrequency, schedule.toLowerCase());
         const saving = await new Saving({
             kidId,
-            title,
-            startDate,
-            endDate: endDate,
+            title: title.trim(),
+            startDate: new Date(startDate),
+            endDate,
             totalSavingAmount,
             amountFrequency,
-            schedule: schedule?.toLowerCase()
+            schedule: schedule?.toLowerCase(),
+            payments: [],
+            isCompleted: false
         });
         await saving.save();
-  
         return saving;
-    }
-    static calculateProgress(currentAmount, totalAmount) {
-        return totalAmount > 0 ? Math.min(100, (currentAmount / totalAmount) * 100) : 0;
     }
     static async fetchSaving(id, kidId) {
         const saving = await Saving.findOne({ kidId: kidId, _id: id });
         return saving;
     }
-    static async fetchAllSavings(kidId, page, limit) {
-        const savings = await paginate(Saving, page, limit, "", { kidId: kidId });
-        return savings;
-    }
     static async deleteSaving(id, kidId) {
         const saving = await Saving.findOneAndDelete({ kidId: kidId, _id: id });
         return saving;
     }
-    // static async makePayment(kidId, savingId, amount, isScheduledPayment = false) {
-    //     const saving = await Saving.findById(savingId);
-    //     if (!saving)
-    //         throw new Error("Saving goal not found");
-    //     if (saving.kidId.toString() !== kidId) {
-    //         throw new Error("Not authorized to make payment for this goal");
-    //     }
-    //     const savingsWallet = await SavingsWallet.findOne({ savingId, kidId });
-    //     if (!savingsWallet)
-    //         throw new Error("Savings wallet not found");
-    //     if (savingsWallet.isCompleted) {
-    //         throw new Error("Savings goal already completed");
-    //     }
-    //     // Check if payment would exceed the goal amount
-    //     const newAmount = savingsWallet.currentAmount + amount;
-    //     if (newAmount > saving.totalSavingAmount) {
-    //         throw new Error(`Payment would exceed goal amount. Maximum additional payment: $${saving.totalSavingAmount - savingsWallet.currentAmount}`);
-    //     }
-    //     // Deduct from main wallet
-    //     const wallet = await Wallet.findOne({ kid: kidId });
-    //     if (!wallet)
-    //         throw new Error("Wallet not found");
-    //     if (wallet.balance < amount) {
-    //         throw new Error("Insufficient funds in wallet");
-    //     }
-    //     wallet.balance -= amount;
-    //     await wallet.save();
-    //     // Record transaction in ledger
-    //     const ledgerTransaction = new LedgerTransaction({
-    //         kid: kidId,
-    //         wallet: wallet._id,
-    //         type: ETransactionType.Debit,
-    //         transactionType: ETransactionName.SavingsDeposit,
-    //         amount,
-    //         description: `Payment to savings goal: ${saving.title}`,
-    //     });
-    //     await ledgerTransaction.save();
-    //     // Update savings wallet
-    //     savingsWallet.currentAmount = newAmount;
-    //     savingsWallet.payments.push({
-    //         amount,
-    //         paymentDate: new Date(),
-    //         isScheduledPayment
-    //     });
-    //     // Check if goal is completed
-    //     if (Math.abs(newAmount - saving.totalSavingAmount) < 0.01) { // Account for floating point precision
-    //         savingsWallet.isCompleted = true;
-    //     }
-    //     await savingsWallet.save();
-    //     return {
-    //         saving,
-    //         savingsWallet,
-    //         progress: this.calculateProgress(savingsWallet.currentAmount, saving.totalSavingAmount)
-    //     };
-    // }
-    // static async withdrawFromSavings(kidId, savingId) {
-    //     const saving = await Saving.findById(savingId);
-    //     if (!saving)
-    //         throw new NotFoundError("Saving goal not found");
-    //     const savingsWallet = await SavingsWallet.findOne({ savingId, kidId });
-    //     if (!savingsWallet)
-    //         throw new NotFoundError("Savings wallet not found");
-    //     if (!savingsWallet.isCompleted) {
-    //         throw new ForbiddenError("Cannot withdraw from incomplete savings goal");
-    //     }
-    //     // Get the kid's main wallet
-    //     const wallet = await Wallet.findOne({ kid: kidId });
-    //     if (!wallet)
-    //         throw new NotFoundError("Wallet not found");
-    //     // Transfer funds from savings to main wallet
-    //     wallet.balance += savingsWallet.currentAmount;
-    //     await wallet.save();
-    //     // Record transaction in ledger
-    //     const ledgerTransaction = new LedgerTransaction({
-    //         kid: kidId,
-    //         wallet: wallet._id,
-    //         type: ETransactionType.Credit,
-    //         transactionType: ETransactionName.SavingsWithdrawal,
-    //         amount: savingsWallet.currentAmount,
-    //         description: `Withdrawal from savings goal: ${saving.title}`,
-    //     });
-    //     await ledgerTransaction.save();
-    //     // Reset savings wallet (or mark as withdrawn)
-    //     const withdrawnAmount = savingsWallet.currentAmount;
-    //     savingsWallet.currentAmount = 0;
-    //     savingsWallet.isCompleted = false; // Optionally keep as completed but track withdrawals
-    //     await savingsWallet.save();
-    //     return {
-    //         amountWithdrawn: withdrawnAmount,
-    //         newWalletBalance: wallet.balance
-    //     };
-    // }
-    // static async getSavingsProgress(kidId) {
-    //     const savings = await Saving.find({ kidId });
-    //     const savingsWithProgress = await Promise.all(savings.map(async (saving) => {
-    //         const wallet = await SavingsWallet.findOne({ savingId: saving._id, kidId });
-    //         return {
-    //             ...saving.toObject(),
-    //             currentAmount: wallet?.currentAmount || 0,
-    //             progress: this.calculateProgress(wallet?.currentAmount || 0, saving.totalSavingAmount),
-    //             isCompleted: wallet?.isCompleted || false,
-    //             payments: wallet?.payments || []
-    //         };
-    //     }));
-    //     return savingsWithProgress;
-    // }
-    // static async getPaymentHistory(kidId, savingId) {
-    //     const savingsWallet = await SavingsWallet.findOne({ savingId, kidId });
-    //     if (!savingsWallet)
-    //         throw new NotFoundError("Savings wallet not found");
-    //     return savingsWallet.payments.sort((a, b) => b.paymentDate.getTime() - a.paymentDate.getTime());
-    // }
+    static async validateSavingsInput(amount, savingId, kidId) {
+        if (amount <= 0) {
+            throw new BadRequestError("Amount must be greater than zero");
+        }
+        const saving = await Saving.findById(savingId);
+        if (!saving)
+            throw new BadRequestError("Savings goal not found");
+        if (saving.isCompleted) {
+            throw new BadRequestError("Cannot add to completed savings goal");
+        }
+        const mainWallet = await Wallet.findOne({ kid: kidId });
+        if (!mainWallet)
+            throw new BadRequestError("Main wallet not found");
+        if (mainWallet.balance < amount) {
+            throw new BadRequestError("Insufficient funds in main wallet");
+        }
+        const savingsWallet = await SavingsWallet.findOne({ kid: kidId });
+        if (!savingsWallet)
+            throw new BadRequestError("Savings wallet not found");
+        return { saving, mainWallet, savingsWallet };
+    }
+    static async transferToSavings(kidId, amount, saving, mainWallet, savingsWallet, isScheduledPayment, session) {
+        // 1. Deduct from main wallet
+        mainWallet.balance -= amount;
+        await mainWallet.save({ session });
+        // 2. Record main wallet transaction
+        await this.recordTransaction(kidId, mainWallet._id, ETransactionType.Debit, ETransactionName.SavingsContribution, amount, `Transfer to savings: ${saving.title}`, session);
+        // 3. Add to savings wallet and update goal
+        savingsWallet.balance += amount;
+        await this.updateSavingsWalletGoal(savingsWallet, saving._id, amount, session);
+        // 4. Record savings wallet transaction
+        await this.recordTransaction(kidId, savingsWallet._id, ETransactionType.Credit, ETransactionName.SavingsContribution, amount, `Deposit to savings: ${saving.title}`, session);
+        // 5. Update saving document
+        saving.payments.push({
+            amount,
+            date: new Date(),
+            isScheduledPayment
+        });
+        const totalSaved = saving.payments.reduce((sum, payment) => sum + payment.amount, 0);
+        saving.isCompleted = totalSaved >= saving.totalSavingAmount;
+        await saving.save({ session });
+        // return { 
+        //     mainWallet, 
+        //     savingsWallet,
+        //     saving,
+        //     isGoalCompleted: saving.isCompleted
+        // };
+        return {
+            isGoalCompleted: saving.isCompleted
+        };
+    }
+    static async updateSavingsWalletGoal(savingsWallet, savingId, amount, session) {
+        const goalIndex = savingsWallet.savingsGoals.findIndex((goal) => goal.savingId.toString() === savingId);
+        if (goalIndex >= 0) {
+            savingsWallet.savingsGoals[goalIndex].amountSaved += amount;
+        }
+        else {
+            savingsWallet.savingsGoals.push({
+                savingId,
+                amountSaved: amount
+            });
+        }
+        await savingsWallet.save({ session });
+    }
+    static async recordTransaction(kidId, walletId, type, transactionType, amount, description, session) {
+        const transaction = new LedgerTransaction({
+            kid: kidId,
+            wallet: walletId,
+            type,
+            transactionType,
+            amount,
+            description,
+        });
+        await transaction.save({ session });
+    }
+    static async addToSavings(kidId, savingId, amount, isScheduledPayment = false) {
+        // Validate input
+        const { saving, mainWallet, savingsWallet } = await this.validateSavingsInput(amount, savingId, kidId);
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            // Process all transactions and updates in one call
+            const result = await this.transferToSavings(kidId, amount, saving, mainWallet, savingsWallet, isScheduledPayment, session);
+            await session.commitTransaction();
+            return { success: true, ...result };
+        }
+        catch (error) {
+            await session.abortTransaction();
+            throw error;
+        }
+        finally {
+            session.endSession();
+        }
+    }
+    static async withdrawFromSavings(kidId, savingId) {
+        const saving = await Saving.findById(savingId);
+        if (!saving)
+            throw new NotFoundError("Savings goal not found");
+        if (!saving.isCompleted)
+            throw new ForbiddenError("Cannot withdraw from incomplete savings goal");
+        const wallet = await SavingsWallet.findOne({ kid: kidId });
+        if (!wallet)
+            throw new NotFoundError("Savings wallet not found");
+        // Find the savings goal in the wallet
+        const savingsGoal = wallet.savingsGoals.find(goal => goal.savingId.toString() === savingId);
+        if (!savingsGoal)
+            throw new NotFoundError("Savings goal not found in wallet");
+        // Transfer to main wallet (implement this in WalletService)
+        await WalletService.addFunds(kidId, savingsGoal.amountSaved, `Withdrawal from savings: ${saving.title}`, ETransactionName.SavingsWithdrawal);
+        // Update savings wallet
+        wallet.balance -= savingsGoal.amountSaved;
+        wallet.savingsGoals = wallet.savingsGoals.filter(goal => goal.savingId.toString() !== savingId);
+        await wallet.save();
+        return { amount: savingsGoal.amountSaved };
+    }
+    static async getSavingsHistory(kidId, savingId) {
+        const saving = await Saving.findById({ kidId: kidId, _id: savingId });
+        if (!saving)
+            throw new NotFoundError("Saving goal not found");
+        return saving.payments.map(payment => ({
+            amount: payment.amount,
+            date: payment.date,
+            isScheduledPayment: payment.isScheduledPayment
+        }));
+    }
+    static async getAllSavingsGoals(kidId) {
+        const savings = await Saving.find({ kidId });
+        const savingsWallet = await SavingsWallet.findOne({ kid: kidId });
+        return savings.map((saving) => {
+            const totalSaved = saving.payments.reduce((sum, payment) => sum + payment.amount, 0);
+            const progressPercentage = Math.min(100, Math.round((totalSaved / saving.totalSavingAmount) * 100));
+            const goalInWallet = savingsWallet?.savingsGoals.find(g => g.savingId.toString() === saving._id.toString());
+            return {
+                _id: saving._id,
+                title: saving.title,
+                startDate: saving.startDate,
+                endDate: saving.endDate,
+                totalSavingAmount: saving.totalSavingAmount,
+                totalSaved, // Sum of all payments
+                progressPercentage, // 0-100%
+                amountLeft: saving.totalSavingAmount - totalSaved,
+                isCompleted: saving.isCompleted
+            };
+        });
+    }
+    static async checkAndSendReminders() {
+        const today = new Date();
+        const savings = await Saving.find({ isCompleted: false });
+        for (const saving of savings) {
+            const lastPaymentDate = saving.payments.length > 0
+                ? saving.payments[saving.payments.length - 1].date
+                : saving.startDate;
+            const daysSinceLastPayment = Math.floor((today.getTime() - new Date(lastPaymentDate).getTime()) / (1000 * 60 * 60 * 24));
+            let shouldNotify = false;
+            switch (saving.schedule) {
+                case ESavingSchedule.Weekly:
+                    shouldNotify = daysSinceLastPayment >= 7;
+                    break;
+                case ESavingSchedule.BiWeekly:
+                    shouldNotify = daysSinceLastPayment >= 14;
+                    break;
+                case ESavingSchedule.Monthly:
+                    shouldNotify = daysSinceLastPayment >= 30;
+                    break;
+            }
+            if (shouldNotify) {
+                const kid = await Kid.findById(saving.kidId);
+                if (kid && kid.fcmToken) {
+                    await sendNotification(kid.fcmToken, "Savings Reminder", `Don't forget to make your ${saving.schedule} payment for your savings goal: ${saving.title}`);
+                }
+            }
+        }
+    }
 }
 export default SavingService;

@@ -52,6 +52,7 @@ export enum ETransactionName {
   ChorePayment = "chorePayment",
   ExpensePayment = "expensePayment",
   SavingsDeposit = "savingsDeposit",
+  SavingsContribution = "savingsContribution",
   SavingsWithdrawal = "savingsWithdrawal",
   Withdrawal = "withdrawal"
 }

@@ -27,7 +27,7 @@ import { uploadSingleFile } from "../../utils/file_upload.utils";
 import sendNotification from "../../utils/notifications";
 import bcrypt from 'bcrypt';
 import CustomRequest from "../../models/CustomRequest";
-import { Wallet } from "../wallets/wallet.model";
+import { SavingsWallet, Wallet } from "../wallets/wallet.model";
 
 
 export class AuthService {
@@ -610,12 +610,8 @@ static async ResetPassword(req: Request, res: Response) {
           message: "Unauthorized access",
         });
       }
-      console.log("Request Body:", req.body); // Debugging Request Body
-      console.log("File Data:", req.file); // Debugging Uploaded File
       const { name, password } = req.body;
 
-      console.log(name);
-      console.log(password);
       const parentId = req.user;
 
       const existingParent = await User.findById({ _id: parentId });
@@ -672,6 +668,13 @@ static async ResetPassword(req: Request, res: Response) {
 
       await wallet.save()
 
+      const savingsWallet = new SavingsWallet({
+        kid: newKid._id,
+        balance: 0,
+        savingsGoals: []
+    });
+    await savingsWallet.save();
+
       return res
         .status(status_codes.HTTP_201_CREATED)
         .json({
@@ -691,8 +694,6 @@ static async ResetPassword(req: Request, res: Response) {
           errors, // Sends all validation errors (e.g., missing name, invalid values)
         });
       }
-
-      console.error("Kid's account creation Error:", error);
 
       return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
         status: 500,

@@ -1,7 +1,17 @@
 import { ESavingSchedule } from "../../models/enums.js";
 import mongoose, { Schema, model, ObjectId, Document } from "mongoose"; 
 
-interface ISaving extends Document{
+export interface IPayment {
+    amount: number;
+    date: Date;
+    isScheduledPayment: boolean;
+  }
+
+ export interface ISavingsGoal {
+    savingId: mongoose.Types.ObjectId;
+    amountSaved: number;
+}
+interface ISaving extends Document {
     kidId: ObjectId
     title: string
     startDate: Date
@@ -9,43 +19,40 @@ interface ISaving extends Document{
     totalSavingAmount: number
     schedule: ESavingSchedule
     amountFrequency: number
+    payments: IPayment[]
+    isCompleted: boolean
 }
-
 interface ISavingsWallet extends Document {
-    savingId: mongoose.Types.ObjectId;
-    kidId: mongoose.Types.ObjectId;
-    currentAmount: number;
-    payments: Array<{
-        amount: number;
-        paymentDate: Date;
-        isScheduledPayment: boolean;
-    }>;
-    isCompleted: boolean;
+    kid: mongoose.Types.ObjectId;
+    balance: number;
+    savingsGoals: ISavingsGoal
 }
-
 
 const savingSchema: Schema = new Schema<ISaving>({
-    kidId: { type: mongoose.Schema.Types.ObjectId, ref: "Kid", default: null },
-    endDate: { type: Date, required: [true, 'End Date is a required field'], default: null },
-    title: { type: String, required: [true, 'Title is a required field'], trim: true },
-    startDate: { type: Date, required: [true, 'Start Date is a required field'], default: null },
-    totalSavingAmount: { type: Number, required: [true, 'Total Saving Amount is a required field'], default: 0 },
-    schedule: { type: String, enum: Object.values(ESavingSchedule), required: [true, 'Schedule is a required field'] },
-    amountFrequency: {type: Number, required: [true, 'Amount Frequency is a required field'] }
-}, { timestamps: true })
-
-
-const savingsWalletSchema = new Schema<ISavingsWallet>({
-    savingId: { type: mongoose.Schema.Types.ObjectId, ref: "Saving", required: true },
     kidId: { type: mongoose.Schema.Types.ObjectId, ref: "Kid", required: true },
-    currentAmount: { type: Number, default: 0 },
+    title: { type: String, required: true, trim: true },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true },
+    totalSavingAmount: { type: Number, required: true },
+    schedule: { type: String, enum: Object.values(ESavingSchedule), required: true },
+    amountFrequency: { type: Number, required: true },
     payments: [{
-        amount: Number,
-        paymentDate: { type: Date, default: Date.now },
-        isScheduledPayment: Boolean
+        amount: { type: Number, required: true },
+        date: { type: Date, default: Date.now },
+        isScheduledPayment: { type: Boolean, default: false }
     }],
     isCompleted: { type: Boolean, default: false }
 }, { timestamps: true });
 
-export const Saving = model<ISaving>("Saving", savingSchema)
-export const SavingsWallet = model<ISavingsWallet>("SavingsWallet", savingsWalletSchema);
+
+const savingsWalletSchema = new Schema<ISavingsWallet>({
+    kid: { type: mongoose.Schema.Types.ObjectId, ref: "Kid", required: true, unique: true },
+    balance: { type: Number, default: 0 },
+    savingsGoals: [{
+      savingId: { type: mongoose.Schema.Types.ObjectId, ref: "Saving" },
+      amountSaved: { type: Number, default: 0 }
+    }]
+  }, { timestamps: true });
+  
+  export const Saving = mongoose.models.Saving || model<ISaving>("Saving", savingSchema);
+  export const SavingsWallet = mongoose.models.SavingsWallet || model<ISavingsWallet>("SavingsWallet", savingsWalletSchema);

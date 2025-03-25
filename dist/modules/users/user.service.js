@@ -9,7 +9,7 @@ import RefreshToken from "./refresh.token.model.js";
 import comparePassword from "../../utils/compare_password.js";
 import { uploadSingleFile } from "../../utils/file_upload.utils.js";
 import bcrypt from 'bcrypt';
-import { Wallet } from "../wallets/wallet.model.js";
+import { SavingsWallet, Wallet } from "../wallets/wallet.model.js";
 export class AuthService {
     static async register(reqBody, imageUrl) {
         const { first_name, last_name, email, password, gender, country, phone_number, } = reqBody;
@@ -488,11 +488,7 @@ export class AuthService {
                     message: "Unauthorized access",
                 });
             }
-            console.log("Request Body:", req.body); // Debugging Request Body
-            console.log("File Data:", req.file); // Debugging Uploaded File
             const { name, password } = req.body;
-            console.log(name);
-            console.log(password);
             const parentId = req.user;
             const existingParent = await User.findById({ _id: parentId });
             if (!existingParent) {
@@ -539,6 +535,12 @@ export class AuthService {
                 balance: 0
             });
             await wallet.save();
+            const savingsWallet = new SavingsWallet({
+                kid: newKid._id,
+                balance: 0,
+                savingsGoals: []
+            });
+            await savingsWallet.save();
             return res
                 .status(status_codes.HTTP_201_CREATED)
                 .json({
@@ -557,7 +559,6 @@ export class AuthService {
                     errors, // Sends all validation errors (e.g., missing name, invalid values)
                 });
             }
-            console.error("Kid's account creation Error:", error);
             return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
                 status: 500,
                 success: false,
