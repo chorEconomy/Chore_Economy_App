@@ -10,7 +10,6 @@ import comparePassword from "../../utils/compare_password.js";
 import { uploadSingleFile } from "../../utils/file_upload.utils.js";
 import bcrypt from 'bcrypt';
 import { Wallet } from "../wallets/wallet.model.js";
-
 export class AuthService {
     static async register(reqBody, imageUrl) {
         const { first_name, last_name, email, password, gender, country, phone_number, } = reqBody;

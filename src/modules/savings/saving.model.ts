@@ -11,6 +11,19 @@ interface ISaving extends Document{
     amountFrequency: number
 }
 
+interface ISavingsWallet extends Document {
+    savingId: mongoose.Types.ObjectId;
+    kidId: mongoose.Types.ObjectId;
+    currentAmount: number;
+    payments: Array<{
+        amount: number;
+        paymentDate: Date;
+        isScheduledPayment: boolean;
+    }>;
+    isCompleted: boolean;
+}
+
+
 const savingSchema: Schema = new Schema<ISaving>({
     kidId: { type: mongoose.Schema.Types.ObjectId, ref: "Kid", default: null },
     endDate: { type: Date, required: [true, 'End Date is a required field'], default: null },
@@ -22,4 +35,17 @@ const savingSchema: Schema = new Schema<ISaving>({
 }, { timestamps: true })
 
 
+const savingsWalletSchema = new Schema<ISavingsWallet>({
+    savingId: { type: mongoose.Schema.Types.ObjectId, ref: "Saving", required: true },
+    kidId: { type: mongoose.Schema.Types.ObjectId, ref: "Kid", required: true },
+    currentAmount: { type: Number, default: 0 },
+    payments: [{
+        amount: Number,
+        paymentDate: { type: Date, default: Date.now },
+        isScheduledPayment: Boolean
+    }],
+    isCompleted: { type: Boolean, default: false }
+}, { timestamps: true });
+
 export const Saving = model<ISaving>("Saving", savingSchema)
+export const SavingsWallet = model<ISavingsWallet>("SavingsWallet", savingsWalletSchema);

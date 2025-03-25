@@ -9,4 +9,6 @@ const savingSchema = new Schema({
     schedule: { type: String, enum: Object.values(ESavingSchedule), required: [true, 'Schedule is a required field'] },
     amountFrequency: { type: Number, required: [true, 'Amount Frequency is a required field'] }
 }, { timestamps: true });
+
 export const Saving = model("Saving", savingSchema);
+// export const SavingsWallet = model("SavingsWallet", savingsWalletSchema);

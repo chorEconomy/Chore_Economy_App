@@ -36,11 +36,10 @@ class PaymentController {
         throw new UnauthorizedError("Unauthorized access");
         }
         
-      const { kidId, paymentMethodId } = req.body;
+      const { kidId } = req.body;
       const paymentIntent = await PaymentService.processPayment(
         kidId,
         parent._id,
-        paymentMethodId
       );
 
       res.status(status_codes.HTTP_200_OK).json({

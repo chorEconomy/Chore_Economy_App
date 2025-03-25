@@ -23,8 +23,8 @@ class PaymentController {
             if (!parent) {
                 throw new UnauthorizedError("Unauthorized access");
             }
-            const { kidId, paymentMethodId } = req.body;
-            const paymentIntent = await PaymentService.processPayment(kidId, parent._id, paymentMethodId);
+            const { kidId } = req.body;
+            const paymentIntent = await PaymentService.processPayment(kidId, parent._id);
             res.status(status_codes.HTTP_200_OK).json({
                 status: 200,
                 success: true,

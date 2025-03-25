@@ -55,16 +55,11 @@ class PaymentService {
         const totalAmount = approvedChores.reduce((sum, chore) => sum + chore.earn, 0);
         return { approvedChores, totalAmount };
     }
-    static async processStripePayment(totalAmount, paymentMethodId) {
+    static async processStripePayment(totalAmount) {
         const paymentIntent = await stripe.paymentIntents.create({
             amount: totalAmount * 100, // Convert to cents
             currency: "usd",
-            payment_method: paymentMethodId,
-            confirm: true,
-            off_session: true, // Allow payments without user interaction
-            error_on_requires_action: true, // Fail if additional action is required
         });
-        
         return paymentIntent;
     }
     static async addFundsToWallet(kid, totalAmount) {
@@ -100,14 +95,14 @@ class PaymentService {
             await paymentSchedule.save();
         }
     }
-    static async processPayment(kidId, parentId, paymentMethodId) {
+    static async processPayment(kidId, parentId) {
         try {
             // Validate kid and parent
             const kid = await this.validateKidAndParent(kidId, parentId);
             // Get approved chores and calculate total amount
             const { approvedChores, totalAmount } = await this.getApprovedChoresAndTotalAmount(kidId);
             // Process payment via Stripe
-            const paymentIntent = await this.processStripePayment(totalAmount, paymentMethodId);
+            const paymentIntent = await this.processStripePayment(totalAmount);
             // Add funds to the kid's wallet
             await this.addFundsToWallet(kid, totalAmount);
             // Mark chores as completed

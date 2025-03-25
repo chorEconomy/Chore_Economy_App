@@ -84,16 +84,11 @@ class PaymentService {
   }
 
   static async processStripePayment(
-    totalAmount: number,
-    paymentMethodId: string
+    totalAmount: number
   ) {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount * 100, // Convert to cents
       currency: "usd",
-      payment_method: paymentMethodId,
-      confirm: true,
-      off_session: true, // Allow payments without user interaction
-      error_on_requires_action: true, // Fail if additional action is required
     });
 
     return paymentIntent;
@@ -162,7 +157,6 @@ class PaymentService {
   static async processPayment(
     kidId: any,
     parentId: any,
-    paymentMethodId: string
   ) {
     try {
       // Validate kid and parent
@@ -174,8 +168,7 @@ class PaymentService {
 
       // Process payment via Stripe
       const paymentIntent = await this.processStripePayment(
-        totalAmount,
-        paymentMethodId
+        totalAmount
       );
 
       // Add funds to the kid's wallet
@@ -191,6 +184,7 @@ class PaymentService {
       await this.updateNextDueDate(parentId);
 
       return paymentIntent;
+
     } catch (error: any) {
       console.error("Payment failed:", error);
       throw new Error(`Payment failed: ${error.message}`);

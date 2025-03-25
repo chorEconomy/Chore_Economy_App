@@ -118,7 +118,101 @@ class SavingController {
        message: "Saving deleted successfully.",
      });
      return;
- })
+  }) 
+
+  static MakePayment = asyncHandler(async (req: Request, res: Response) => {
+    const kid = await Kid.findById(req.user);
+    if (!kid) {
+      throw new UnauthorizedError("Unauthorized access");
+    }
+
+    const { savingId, amount, isScheduledPayment } = req.body;
+
+    const result = await SavingService.makePayment(kid._id, savingId, amount, isScheduledPayment);
+    res.status(status_codes.HTTP_200_OK).json({
+      status: 200,
+      success: true,
+      data: result
+    });
+    return;
+  });
+  
+  static TopUpSavings = asyncHandler(async (req: Request, res: Response) => {
+    const kid = await Kid.findById(req.user);
+    if (!kid) {
+      throw new UnauthorizedError("Unauthorized access");
+    }
+
+    const { savingId, amount } = req.body;
+
+    const result = await SavingService.makePayment(kid._id, savingId, amount, false);
+
+    res.status(status_codes.HTTP_200_OK).json({
+      success: true,
+      status: 200,
+      data: result
+    });
+    return 
+});
+
+static WithdrawFromSavings = asyncHandler(async (req: Request, res: Response) => {
+  const kid = await Kid.findById(req.user);
+
+  if (!kid) {
+    throw new UnauthorizedError("Unauthorized access");
+  }
+
+  const { savingId } = req.body;
+
+  const result = await SavingService.withdrawFromSavings(kid._id, savingId);
+
+  res.status(status_codes.HTTP_200_OK).json({
+    success: true,
+    status: 200,
+    data: result
+  });
+  return 
+});
+  
+static GetSavingsGoals = asyncHandler(async (req: Request, res: Response) => {
+  const kid = await Kid.findById(req.user);
+
+  if (!kid) {
+    throw new UnauthorizedError("Unauthorized access");
+  }
+
+  const savings = await SavingService.getSavingsProgress(kid._id);
+  res.status(status_codes.HTTP_200_OK).json({
+    success: true,
+    status: 200,
+    data: savings
+  });
+  return 
+});
+
+static GetPaymentHistory = asyncHandler(async (req: Request, res: Response) => {
+  const kid = await Kid.findById(req.user);
+
+  if (!kid) {
+    throw new UnauthorizedError("Unauthorized access");
+  }
+
+  const { savingId } = req.params;
+
+  if (!savingId) {
+    throw new BadRequestError("Please provide a valid saving id");
+  }
+
+  const history = await SavingService.getPaymentHistory(kid._id, savingId);
+
+  res.status(status_codes.HTTP_200_OK).json({
+    success: true,
+    status: 200,
+    data: history
+  });
+  return;
+});
+  
 }
 
 export default SavingController;
