@@ -15,7 +15,6 @@ const savingSchema = new Schema({
         }],
     isCompleted: { type: Boolean, default: false }
 }, { timestamps: true });
-
 const savingsWalletSchema = new Schema({
     kid: { type: mongoose.Schema.Types.ObjectId, ref: "Kid", required: true, unique: true },
     balance: { type: Number, default: 0 },

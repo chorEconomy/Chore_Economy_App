@@ -69,11 +69,8 @@ class SavingService {
         return { saving, mainWallet, savingsWallet };
     }
     static async transferToSavings(kidId, amount, saving, mainWallet, savingsWallet, isScheduledPayment, session) {
-        // 1. Deduct from main wallet
-        mainWallet.balance -= amount;
-        await mainWallet.save({ session });
-        // 2. Record main wallet transaction
-        await this.recordTransaction(kidId, mainWallet._id, ETransactionType.Debit, ETransactionName.SavingsContribution, amount, `Transfer to savings: ${saving.title}`, session);
+        const kid = await Kid.findById(kidId);
+        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, session);
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;
         await this.updateSavingsWalletGoal(savingsWallet, saving._id, amount, session);
@@ -151,14 +148,14 @@ class SavingService {
         if (!wallet)
             throw new NotFoundError("Savings wallet not found");
         // Find the savings goal in the wallet
-        const savingsGoal = wallet.savingsGoals.find(goal => goal.savingId.toString() === savingId);
+        const savingsGoal = wallet.savingsGoals.find((goal) => goal.savingId.toString() === savingId);
         if (!savingsGoal)
             throw new NotFoundError("Savings goal not found in wallet");
         // Transfer to main wallet (implement this in WalletService)
-        await WalletService.addFunds(kidId, savingsGoal.amountSaved, `Withdrawal from savings: ${saving.title}`, ETransactionName.SavingsWithdrawal);
+        await WalletService.addFundsToWallet(kidId, savingsGoal.amountSaved, `Withdrawal from savings: ${saving.title}`, ETransactionName.SavingsWithdrawal);
         // Update savings wallet
         wallet.balance -= savingsGoal.amountSaved;
-        wallet.savingsGoals = wallet.savingsGoals.filter(goal => goal.savingId.toString() !== savingId);
+        wallet.savingsGoals = wallet.savingsGoals.filter((goal) => goal.savingId.toString() !== savingId);
         await wallet.save();
         return { amount: savingsGoal.amountSaved };
     }
@@ -166,7 +163,7 @@ class SavingService {
         const saving = await Saving.findById({ kidId: kidId, _id: savingId });
         if (!saving)
             throw new NotFoundError("Saving goal not found");
-        return saving.payments.map(payment => ({
+        return saving.payments.map((payment) => ({
             amount: payment.amount,
             date: payment.date,
             isScheduledPayment: payment.isScheduledPayment
@@ -178,7 +175,7 @@ class SavingService {
         return savings.map((saving) => {
             const totalSaved = saving.payments.reduce((sum, payment) => sum + payment.amount, 0);
             const progressPercentage = Math.min(100, Math.round((totalSaved / saving.totalSavingAmount) * 100));
-            const goalInWallet = savingsWallet?.savingsGoals.find(g => g.savingId.toString() === saving._id.toString());
+            const goalInWallet = savingsWallet?.savingsGoals.find((g) => g.savingId.toString() === saving._id.toString());
             return {
                 _id: saving._id,
                 title: saving.title,

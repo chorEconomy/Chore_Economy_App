@@ -3,14 +3,20 @@ import { ETransactionType } from '../../models/enums.js';
 import { ForbiddenError, NotFoundError } from '../../models/errors.js';
 import { Wallet } from './wallet.model.js';
 class WalletService {
-    static async addFunds(kid, amount, description, transactionName) {
-        let wallet = await Wallet.findOne({ kid: kid._id });
+    static async addFundsToWallet(kid, amount, description, transactionName, session) {
+        const options = session ? { session } : {};
+        let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
         if (!wallet) {
-            wallet = new Wallet({ kid: kid._id, balance: 0 });
+            wallet = new Wallet({
+                kid: kid._id,
+                balance: 0,
+                totalEarnings: 0
+            });
         }
         wallet.balance += amount;
         wallet.totalEarnings += amount;
-        await wallet.save();
+        await wallet.save(options);
+        console.log("I got here");
         const transaction = new LedgerTransaction({
             kid: kid._id,
             wallet: wallet._id,
@@ -19,12 +25,12 @@ class WalletService {
             amount,
             description,
         });
-        await transaction.save();
+        await transaction.save(options);
         return wallet;
     }
-    ;
-    static async deductFunds(kid, amount, description, transactionName) {
-        let wallet = await Wallet.findOne({ kid: kid._id });
+    static async deductFundsFromWallet(kid, amount, description, transactionName, session) {
+        const options = session ? { session } : {};
+        let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
         if (!wallet) {
             throw new NotFoundError("Wallet not found");
         }
@@ -32,7 +38,7 @@ class WalletService {
             throw new ForbiddenError("Insufficient funds");
         }
         wallet.balance -= amount;
-        await wallet.save();
+        await wallet.save(options);
         const transaction = new LedgerTransaction({
             kid: kid._id,
             wallet: wallet._id,
@@ -41,7 +47,7 @@ class WalletService {
             amount,
             description,
         });
-        await transaction.save();
+        await transaction.save(options);
         return wallet;
     }
     static async fetchWallet(kid) {

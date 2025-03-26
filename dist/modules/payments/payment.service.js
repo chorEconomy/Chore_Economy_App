@@ -7,6 +7,7 @@ import WalletService from "../wallets/wallet.service.js";
 import { PaymentSchedule } from "./payment.module.js";
 import { BadRequestError } from "../../models/errors.js";
 import sendNotification from "../../utils/notifications.js";
+import mongoose from "mongoose";
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 class PaymentService {
@@ -15,28 +16,54 @@ class PaymentService {
         if (!kids.length) {
             return [];
         }
-    
-        return Promise.all(
-            kids.map(async (kid) => {
-                const approvedChores = await Chore.find({
-                    kidId: kid._id,
-                    status: EChoreStatus.Approved,
-                }).exec();
-    
-                const totalAmount = approvedChores.reduce((sum, chore) => sum + chore.earn, 0);
-                return {
-                    kidId: kid._id,
-                    kidName: kid.name,
-                    totalAmount,
-                    approvedChores,
-                    hasApprovedChores: approvedChores.length > 0
-                };
-            })
-        );
+        return Promise.all(kids.map(async (kid) => {
+            const approvedChores = await Chore.find({
+                kidId: kid._id,
+                status: EChoreStatus.Approved,
+            }).exec();
+            const totalAmount = approvedChores.reduce((sum, chore) => sum + chore.earn, 0);
+            return {
+                kidId: kid._id,
+                kidName: kid.name,
+                totalAmount,
+                approvedChores,
+                hasApprovedChores: approvedChores.length > 0
+            };
+        }));
     }
-    static async validateKidAndParent(kidId, parentId) {
-        const kid = await Kid.findById(kidId);
-        const parent = await User.findById(parentId);
+    static async processPayment(kidId, parentId) {
+        let session = null;
+        try {
+            session = await mongoose.startSession();
+            session.startTransaction();
+            const kid = await this.validateKidAndParent(kidId, parentId, session);
+            const { approvedChores, totalAmount } = await this.getApprovedChoresAndTotalAmount(kidId, session);
+            const paymentIntent = await this.processStripePayment(totalAmount);
+            // All database operations within the transaction
+            await this.addFundsToWallet(kid, totalAmount, session);
+            await this.markChoresAsCompleted(kidId, session);
+            await this.updateParentCanCreateFlag(parentId, session);
+            await this.updateNextDueDate(parentId, session);
+            // Commit the transaction
+            await session.commitTransaction();
+            return paymentIntent;
+        }
+        catch (error) {
+            if (session) {
+                await session.abortTransaction();
+            }
+            console.error("Payment failed:", error);
+            throw new Error(`Payment failed: ${error.message}`);
+        }
+        finally {
+            if (session) {
+                session.endSession();
+            }
+        }
+    }
+    static async validateKidAndParent(kidId, parentId, session) {
+        const kid = await Kid.findById(kidId).session(session);
+        const parent = await User.findById(parentId).session(session);
         if (!kid) {
             throw new Error("Kid not found");
         }
@@ -45,38 +72,59 @@ class PaymentService {
         }
         return kid;
     }
-    static async getApprovedChoresAndTotalAmount(kidId) {
+    static async processStripePayment(totalAmount) {
+        try {
+            // Validate input amount
+            if (typeof totalAmount !== 'number' || totalAmount <= 0) {
+                throw new Error('Invalid payment amount');
+            }
+            // Convert to cents and round to avoid floating point issues
+            const amountInCents = Math.round(totalAmount * 100);
+            // Create PaymentIntent with additional recommended parameters
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amountInCents,
+                currency: 'usd'
+            });
+            // Log successful creation (remove in production)
+            console.log(`Created PaymentIntent: ${paymentIntent.id}`);
+            return paymentIntent;
+        }
+        catch (error) {
+            console.error('Stripe PaymentIntent creation failed:', error);
+            // Handle specific Stripe errors
+            if (error.type === 'StripeInvalidRequestError') {
+                throw new Error(`Payment processing error: ${error.message}`);
+            }
+            // Handle rate limiting
+            if (error.type === 'StripeRateLimitError') {
+                throw new Error('Payment system busy. Please try again shortly.');
+            }
+            // Generic error fallback
+            throw new Error('Failed to process payment. Please try again.');
+        }
+    }
+    static async getApprovedChoresAndTotalAmount(kidId, session) {
         const approvedChores = await Chore.find({
             kidId: kidId,
             status: EChoreStatus.Approved,
-        });
+        }).session(session);
         if (!approvedChores.length) {
             throw new Error("No approved chores found for this kid");
         }
         const totalAmount = approvedChores.reduce((sum, chore) => sum + chore.earn, 0);
         return { approvedChores, totalAmount };
     }
-    static async processStripePayment(totalAmount) {
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: totalAmount * 100, // Convert to cents
-            currency: "usd",
-        });
-        return paymentIntent;
+    static async addFundsToWallet(kid, totalAmount, session) {
+        await WalletService.addFundsToWallet(kid, totalAmount, "Payment for approved chores", ETransactionName.ChorePayment, session);
     }
-    static async addFundsToWallet(kid, totalAmount) {
-        await WalletService.addFunds(kid, totalAmount, "Payment for approved chores", ETransactionName.ChorePayment);
+    static async markChoresAsCompleted(kidId, session) {
+        await Chore.updateMany({ kidId: kidId, status: EChoreStatus.Approved }, { status: EChoreStatus.Completed }, { session });
     }
-    static async markChoresAsCompleted(kidId) {
-        await Chore.updateMany({ kidId: kidId, status: EChoreStatus.Approved }, { status: EChoreStatus.Completed });
-    }
-    static async updateParentCanCreateFlag(parentId) {
-        await User.findByIdAndUpdate(parentId, { canCreate: true });
-    }
-    static async updateNextDueDate(parentId) {
+    static async updateNextDueDate(parentId, session) {
         const paymentSchedule = await PaymentSchedule.findOne({
             parentId,
             status: "active",
-        });
+        }).session(session);
         if (paymentSchedule) {
             let nextDueDate;
             switch (paymentSchedule.scheduleType) {
@@ -93,31 +141,11 @@ class PaymentService {
                     throw new Error("Invalid schedule type");
             }
             paymentSchedule.nextDueDate = nextDueDate;
-            await paymentSchedule.save();
+            await paymentSchedule.save({ session });
         }
     }
-    static async processPayment(kidId, parentId) {
-        try {
-            // Validate kid and parent
-            const kid = await this.validateKidAndParent(kidId, parentId);
-            // Get approved chores and calculate total amount
-            const { approvedChores, totalAmount } = await this.getApprovedChoresAndTotalAmount(kidId);
-            // Process payment via Stripe
-            const paymentIntent = await this.processStripePayment(totalAmount);
-            // Add funds to the kid's wallet
-            await this.addFundsToWallet(kid, totalAmount);
-            // Mark chores as completed
-            await this.markChoresAsCompleted(kidId);
-            // Update parent's canCreate flag
-            await this.updateParentCanCreateFlag(parentId);
-            // Update the nextDueDate for the parent's payment schedule
-            await this.updateNextDueDate(parentId);
-            return paymentIntent;
-        }
-        catch (error) {
-            console.error("Payment failed:", error);
-            throw new Error(`Payment failed: ${error.message}`);
-        }
+    static async updateParentCanCreateFlag(parentId, session) {
+        await User.findByIdAndUpdate(parentId, { canCreate: true }, { session });
     }
     static async createSchedule(parentId, scheduleType, startDate) {
         const start = new Date(startDate);

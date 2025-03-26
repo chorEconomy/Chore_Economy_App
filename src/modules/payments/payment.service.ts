@@ -93,15 +93,43 @@ class PaymentService {
     return kid;
   }
   
-  private static async processStripePayment(
-    totalAmount: number
-  ) {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalAmount * 100, // Convert to cents
-      currency: "usd",
-    });
-
-    return paymentIntent;
+  private static async processStripePayment(totalAmount: number) {
+    try {
+      // Validate input amount
+      if (typeof totalAmount !== 'number' || totalAmount <= 0) {
+        throw new Error('Invalid payment amount');
+      }
+  
+      // Convert to cents and round to avoid floating point issues
+      const amountInCents = Math.round(totalAmount * 100);
+  
+      // Create PaymentIntent with additional recommended parameters
+      const paymentIntent: any = await stripe.paymentIntents.create({
+        amount: amountInCents,
+        currency: 'usd'
+      });
+  
+      // Log successful creation (remove in production)
+      console.log(`Created PaymentIntent: ${paymentIntent.id}`);
+  
+      return paymentIntent
+      
+    } catch (error: any) {
+      console.error('Stripe PaymentIntent creation failed:', error);
+  
+      // Handle specific Stripe errors
+      if (error.type === 'StripeInvalidRequestError') {
+        throw new Error(`Payment processing error: ${error.message}`);
+      }
+  
+      // Handle rate limiting
+      if (error.type === 'StripeRateLimitError') {
+        throw new Error('Payment system busy. Please try again shortly.');
+      }
+  
+      // Generic error fallback
+      throw new Error('Failed to process payment. Please try again.');
+    }
   }
 
   private static async getApprovedChoresAndTotalAmount(kidId: any, session: ClientSession) {

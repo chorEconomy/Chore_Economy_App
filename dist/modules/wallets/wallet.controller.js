@@ -16,7 +16,6 @@ class WalletController {
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,
-            message: "Wallet fetched successfully.",
             data: wallet
         });
     });

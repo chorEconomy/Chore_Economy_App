@@ -25,7 +25,6 @@ app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/savings", savingsRouter);
 app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/wallets", walletRouter);
-
 app.use("*", (req, res, next) => {
     res.status(status_codes.HTTP_404_NOT_FOUND).json({
         status: 404,
