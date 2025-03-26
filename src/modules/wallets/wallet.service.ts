@@ -2,64 +2,86 @@ import LedgerTransaction from '../ledgers/ledger.model.js';
 import { ETransactionType } from '../../models/enums.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../models/errors.js';
 import { Wallet } from './wallet.model.js';
+import { ClientSession } from 'mongoose';
 
 class WalletService {
 
-    static async addFunds(kid: any, amount: any, description: string, transactionName: string) {
-
-        let wallet = await Wallet.findOne({ kid: kid._id });
-
+    static async addFunds(
+        kid: any, 
+        amount: any, 
+        description: string, 
+        transactionName: string,
+        session?: ClientSession
+      ) {
+        const options = session ? { session } : {};
+        
+        let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
+      
         if (!wallet) {
-            wallet = new Wallet({ kid: kid._id, balance: 0 });
+          wallet = new Wallet({ 
+            kid: kid._id, 
+            balance: 0,
+            totalEarnings: 0 
+          });
         }
         
         wallet.balance += amount;
         wallet.totalEarnings += amount;
-        await wallet.save();
+        await wallet.save(options);
+      
+        console.log("I got here");
+        
 
         const transaction = new LedgerTransaction({
-            kid: kid._id,
-            wallet: wallet._id,
-            transactionType: ETransactionType.Credit,
-            transactionName: transactionName,
-            amount,
-            description,
+          kid: kid._id,
+          wallet: wallet._id,
+          transactionType: ETransactionType.Credit,
+          transactionName: transactionName,
+          amount,
+          description,
         });
         
-          await transaction.save();
+        await transaction.save(options);
         
-          return wallet;
-    };
-
-    static async deductFunds(kid: any, amount: any, description: string, transactionName: string) { 
-
-        let wallet = await Wallet.findOne({ kid: kid._id });
-
+        return wallet;
+    }
+    
+    static async deductFunds(
+        kid: any, 
+        amount: any, 
+        description: string, 
+        transactionName: string,
+        session?: ClientSession
+      ) {
+        const options = session ? { session } : {};
+      
+        let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
+      
         if (!wallet) {
           throw new NotFoundError("Wallet not found");
         }
-
+      
         if (wallet.balance < amount) {
-            throw new ForbiddenError("Insufficient funds");
+          throw new ForbiddenError("Insufficient funds");
         }
         
         wallet.balance -= amount;
         
-        await wallet.save();
+        await wallet.save(options);
         
         const transaction = new LedgerTransaction({
-            kid: kid._id,
-            wallet: wallet._id,
-            transactionType: ETransactionType.Debit,
-            transactionName,
-            amount,
-            description,
+          kid: kid._id,
+          wallet: wallet._id,
+          transactionType: ETransactionType.Debit,
+          transactionName,
+          amount,
+          description,
         });
         
-          await transaction.save();
+        await transaction.save(options);
         
-          return wallet;
-    }
+        return wallet;
+      }
 
     static async fetchWallet(kid: any) {
         const wallet = await Wallet.findOne({ kid: kid._id });

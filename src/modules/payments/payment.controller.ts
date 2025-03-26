@@ -11,7 +11,7 @@ const CRON_SECRET = process.env.CRON_SECRET_KEY;
 class PaymentController {
   static GetKidsForPayment = asyncHandler(
     async (req: Request, res: Response) => {
-      const parent = await User.findById(req.user);
+      const parent: any = await User.findById(req.user);
       if (!parent) {
         throw new UnauthorizedError("Unauthorized access");
       }

@@ -13,25 +13,26 @@ class PaymentService {
     static async getKidsWithApprovedChores(parentId) {
         const kids = await Kid.find({ parentId });
         if (!kids.length) {
-            throw new Error("No kids found for this parent");
+            return [];
         }
-        const kidsWithChores = await Promise.all(kids.map(async (kid) => {
-            const approvedChores = await Chore.find({
-                kidId: kid._id,
-                status: EChoreStatus.Approved,
-            }).exec();
-            if (!approvedChores.length) {
-                throw new Error(`No approved chores found for kid: ${kid.name}`);
-            }
-            const totalAmount = approvedChores.reduce((sum, chore) => sum + chore.earn, 0);
-            return {
-                kidId: kid._id,
-                kidName: kid.name,
-                totalAmount,
-                approvedChores,
-            };
-        }));
-        return kidsWithChores;
+    
+        return Promise.all(
+            kids.map(async (kid) => {
+                const approvedChores = await Chore.find({
+                    kidId: kid._id,
+                    status: EChoreStatus.Approved,
+                }).exec();
+    
+                const totalAmount = approvedChores.reduce((sum, chore) => sum + chore.earn, 0);
+                return {
+                    kidId: kid._id,
+                    kidName: kid.name,
+                    totalAmount,
+                    approvedChores,
+                    hasApprovedChores: approvedChores.length > 0
+                };
+            })
+        );
     }
     static async validateKidAndParent(kidId, parentId) {
         const kid = await Kid.findById(kidId);

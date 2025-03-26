@@ -16,7 +16,6 @@ const LedgerTransactionSchema: Schema = new mongoose.Schema<ILedgerTransaction>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Kid",
       required: true,
-      unique: true,
     },
     wallet: {
       type: mongoose.Schema.Types.ObjectId,
