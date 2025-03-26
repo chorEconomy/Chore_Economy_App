@@ -6,7 +6,7 @@ import { ClientSession } from 'mongoose';
 
 class WalletService {
 
-    static async addFunds(
+    static async addFundsToWallet(
         kid: any, 
         amount: any, 
         description: string, 
@@ -30,7 +30,6 @@ class WalletService {
         await wallet.save(options);
       
         console.log("I got here");
-        
 
         const transaction = new LedgerTransaction({
           kid: kid._id,
@@ -38,7 +37,7 @@ class WalletService {
           transactionType: ETransactionType.Credit,
           transactionName: transactionName,
           amount,
-          description,
+            description,
         });
         
         await transaction.save(options);
@@ -46,7 +45,7 @@ class WalletService {
         return wallet;
     }
     
-    static async deductFunds(
+    static async deductFundsFromWallet(
         kid: any, 
         amount: any, 
         description: string, 

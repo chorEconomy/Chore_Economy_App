@@ -98,20 +98,11 @@ class SavingService {
         isScheduledPayment: boolean,
         session: mongoose.ClientSession
     ) {
-        // 1. Deduct from main wallet
-        mainWallet.balance -= amount;
-        await mainWallet.save({ session });
+      
 
-        // 2. Record main wallet transaction
-        await this.recordTransaction(
-            kidId,
-            mainWallet._id,
-            ETransactionType.Debit,
-            ETransactionName.SavingsContribution,
-            amount,
-            `Transfer to savings: ${saving.title}`,
-            session
-        );
+        const kid = await Kid.findById(kidId);
+
+        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, session);
 
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;
@@ -242,7 +233,7 @@ class SavingService {
         if (!savingsGoal) throw new NotFoundError("Savings goal not found in wallet");
 
         // Transfer to main wallet (implement this in WalletService)
-        await WalletService.addFunds(
+        await WalletService.addFundsToWallet(
             kidId,
             savingsGoal.amountSaved,
             `Withdrawal from savings: ${saving.title}`,

@@ -123,7 +123,7 @@ class PaymentService {
   }
   
   private static async addFundsToWallet(kid: any, totalAmount: number, session: ClientSession) {
-    await WalletService.addFunds(
+    await WalletService.addFundsToWallet(
       kid,
       totalAmount,
       "Payment for approved chores",
