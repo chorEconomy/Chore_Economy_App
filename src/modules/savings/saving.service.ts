@@ -41,6 +41,7 @@ class SavingService {
             endDate,
             totalSavingAmount,
             amountFrequency,
+            nextDueDate: SavingUtils.calculateNextDueDate(startDate, schedule),
             schedule: schedule?.toLowerCase() as ESavingSchedule,
             payments: [],
             isCompleted: false

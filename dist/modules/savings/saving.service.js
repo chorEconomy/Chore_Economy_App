@@ -33,6 +33,7 @@ class SavingService {
             endDate,
             totalSavingAmount,
             amountFrequency,
+            nextDueDate: SavingUtils.calculateNextDueDate(startDate, schedule),
             schedule: schedule?.toLowerCase(),
             payments: [],
             isCompleted: false
