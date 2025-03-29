@@ -48,7 +48,7 @@ class WalletService {
             kid: kid._id,
             wallet: wallet._id,
             transactionType: ETransactionType.Debit,
-            transactionName,
+            transactionName: transactionName,
             amount,
             description,
         });

@@ -75,7 +75,7 @@ class SavingService {
         if (!saving) throw new BadRequestError("Savings goal not found");
         
         if (saving.isCompleted) {
-            throw new BadRequestError("Cannot add to completed savings goal");
+            throw new BadRequestError("Saving goal has already been completed.");
         }
 
         const mainWallet = await Wallet.findOne({ kid: kidId });
@@ -100,8 +100,6 @@ class SavingService {
         isScheduledPayment: boolean,
         session: mongoose.ClientSession
     ) {
-      
-
         const kid = await Kid.findById(kidId);
 
         await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, session);
@@ -168,20 +166,20 @@ class SavingService {
     private static async recordTransaction(
         kidId: ObjectId,
         walletId: ObjectId,
-        type: ETransactionType,
-        transactionType: ETransactionName,
+        transactionType: ETransactionType,
+        transactionName: ETransactionName,
         amount: number,
         description: string,
         session: mongoose.ClientSession
     ) {
-        const transaction = new LedgerTransaction({
-            kid: kidId,
-            wallet: walletId,
-            type,
-            transactionType,
-            amount,
-            description,
-        });
+           const transaction = new LedgerTransaction({
+                    kid: kidId,
+                    wallet: walletId,
+                    transactionType,
+                    transactionName,
+                    amount,
+                    description,
+                });
         await transaction.save({ session });
     }
 

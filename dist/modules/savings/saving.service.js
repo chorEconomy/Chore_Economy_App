@@ -58,7 +58,7 @@ class SavingService {
         if (!saving)
             throw new BadRequestError("Savings goal not found");
         if (saving.isCompleted) {
-            throw new BadRequestError("Cannot add to completed savings goal");
+            throw new BadRequestError("Saving goal has already been completed.");
         }
         const mainWallet = await Wallet.findOne({ kid: kidId });
         if (!mainWallet)
@@ -113,12 +113,12 @@ class SavingService {
         }
         await savingsWallet.save({ session });
     }
-    static async recordTransaction(kidId, walletId, type, transactionType, amount, description, session) {
+    static async recordTransaction(kidId, walletId, transactionType, transactionName, amount, description, session) {
         const transaction = new LedgerTransaction({
             kid: kidId,
             wallet: walletId,
-            type,
             transactionType,
+            transactionName,
             amount,
             description,
         });
