@@ -72,6 +72,8 @@ class SavingService {
     }
     static async transferToSavings(kidId, amount, saving, mainWallet, savingsWallet, isScheduledPayment, session) {
         const kid = await Kid.findById(kidId);
+        console.log(`Wallet balance from transfer: Amount: ${amount}`);
+
         await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, session);
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;
@@ -124,6 +126,8 @@ class SavingService {
     static async addToSavings(kidId, savingId, amount, isScheduledPayment = false) {
         // Validate input
         const { saving, mainWallet, savingsWallet } = await this.validateSavingsInput(amount, savingId, kidId);
+        console.log(`Wallet balancefrom add:Amount: ${amount}`);
+
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
