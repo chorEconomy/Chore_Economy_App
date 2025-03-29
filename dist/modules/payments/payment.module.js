@@ -1,6 +1,5 @@
 import mongoose, { Schema } from "mongoose";
 import { EPaymentSchedule } from "../../models/enums.js";
-
 const paymentScheduleSchema = new Schema({
     parent: {
         type: mongoose.Schema.Types.ObjectId,

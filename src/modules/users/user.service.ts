@@ -3,18 +3,18 @@ import {
   check_if_user_or_kid_exists,
   getKidByNameAndRole,
   getUserByEmailAndRole,
-} from "../../utils/check_user_exists.utils";
+} from "../../utils/check_user_exists.utils.js";
 import { Response, Request } from "express";
-import generateOTP from "../../utils/otp.utils";
-import { OTPInput, RegisterInputForParent } from "./user.types";
-import { Kid, User } from "./user.model";
+import generateOTP from "../../utils/otp.utils.js";
+import { OTPInput, RegisterInputForParent } from "./user.types.js";
+import { Kid, User } from "./user.model.js";
 import {
   sendResetPasswordEmail,
   sendVerificationEmail,
   sendWelcomeEmail,
-} from "../../utils/email_sender.utils";
-import { EGender, ERole, EStatus } from "../../models/enums";
-import {status_codes} from "../../utils/status_constants";
+} from "../../utils/email_sender.utils.js";
+import { EGender, ERole, EStatus } from "../../models/enums.js";
+import {status_codes} from "../../utils/status_constants.js";
 import {
   decode_token,
   generate_reset_token,

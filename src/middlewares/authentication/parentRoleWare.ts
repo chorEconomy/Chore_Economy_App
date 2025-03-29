@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 
 import { NextFunction, Request, Response } from "express";
-import {status_codes} from "../../utils/status_constants";
-import { ERole } from "../../models/enums";
+import {status_codes} from "../../utils/status_constants.js";
+import { ERole } from "../../models/enums.js";
 import { check_if_user_or_kid_exists } from "../../utils/check_user_exists.utils.js"; 
 
 const authorizeParent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {

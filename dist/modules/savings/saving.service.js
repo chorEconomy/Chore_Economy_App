@@ -8,6 +8,7 @@ import { BadRequestError, ForbiddenError, NotFoundError } from "../../models/err
 import mongoose from "mongoose";
 import WalletService from "../wallets/wallet.service.js";
 import sendNotification from "../../utils/notifications.js";
+import SavingUtils from "./saving.utils.js";
 class SavingService {
     static async createSaving(data, kidId) {
         const { title, startDate, totalSavingAmount, schedule, amountFrequency } = data;
@@ -51,7 +52,8 @@ class SavingService {
         if (amount <= 0) {
             throw new BadRequestError("Amount must be greater than zero");
         }
-        const saving = await Saving.findById(savingId);
+        console.log(savingId)
+        const saving = await Saving.findById({_id: savingId})
         if (!saving)
             throw new BadRequestError("Savings goal not found");
         if (saving.isCompleted) {
@@ -171,11 +173,14 @@ class SavingService {
     }
     static async getAllSavingsGoals(kidId) {
         const savings = await Saving.find({ kidId });
-        const savingsWallet = await SavingsWallet.findOne({ kid: kidId });
+        
+        const savingsWallet = await SavingsWallet.findOne({ kid: kidId }); 
         return savings.map((saving) => {
+            console.log(saving)
             const totalSaved = saving.payments.reduce((sum, payment) => sum + payment.amount, 0);
+            console.log(totalSaved)
             const progressPercentage = Math.min(100, Math.round((totalSaved / saving.totalSavingAmount) * 100));
-            const goalInWallet = savingsWallet?.savingsGoals.find((g) => g.savingId.toString() === saving._id.toString());
+            console.log(progressPercentage) 
             return {
                 _id: saving._id,
                 title: saving.title,
@@ -191,29 +196,27 @@ class SavingService {
     }
     static async checkAndSendReminders() {
         const today = new Date();
-        const savings = await Saving.find({ isCompleted: false });
+        const savings = await Saving.find({
+            isCompleted: false,
+        }).populate('kidId');
         for (const saving of savings) {
-            const lastPaymentDate = saving.payments.length > 0
-                ? saving.payments[saving.payments.length - 1].date
-                : saving.startDate;
-            const daysSinceLastPayment = Math.floor((today.getTime() - new Date(lastPaymentDate).getTime()) / (1000 * 60 * 60 * 24));
-            let shouldNotify = false;
-            switch (saving.schedule) {
-                case ESavingSchedule.Weekly:
-                    shouldNotify = daysSinceLastPayment >= 7;
-                    break;
-                case ESavingSchedule.BiWeekly:
-                    shouldNotify = daysSinceLastPayment >= 14;
-                    break;
-                case ESavingSchedule.Monthly:
-                    shouldNotify = daysSinceLastPayment >= 30;
-                    break;
-            }
-            if (shouldNotify) {
-                const kid = await Kid.findById(saving.kidId);
-                if (kid && kid.fcmToken) {
-                    await sendNotification(kid.fcmToken, "Savings Reminder", `Don't forget to make your ${saving.schedule} payment for your savings goal: ${saving.title}`);
+            try {
+                const lastPaymentDate = saving.payments.length > 0 ?
+                    new Date(Math.max(...saving.payments.map((p) => new Date(p.date).getTime()))) :
+                    saving.startDate;
+                if (SavingUtils.shouldSendReminder(today, lastPaymentDate, saving.schedule)) {
+                    if (saving.kidId.fcmToken) {
+                        await sendNotification(saving.kidId.fcmToken, "Savings Reminder", `Time to make your ${saving.schedule} payment for: ${saving.title}`);
+                    }
+                    // Update nextDueDate to the new calculated due date
+                    saving.nextDueDate = SavingUtils.calculateNextDueDate(lastPaymentDate, saving.schedule);
+                    await saving.save();
+                    console.log(`Sent reminder for saving ${saving._id}, next due: ${saving.nextDueDate}`);
                 }
+            }
+            catch (error) {
+                console.error(`Error processing saving ${saving._id}:`, error);
+                // Continue with next saving even if one fails
             }
         }
     }
