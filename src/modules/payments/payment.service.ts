@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
-import { Kid, User } from "../users/user.model.js";
+import { Kid, Parent } from "../users/user.model.js";
 import { Chore } from "../chores/chore.model.js";
 
 import {
@@ -81,7 +81,7 @@ class PaymentService {
   
   private static async validateKidAndParent(kidId: any, parentId: any, session: ClientSession) {
     const kid = await Kid.findById(kidId).session(session);
-    const parent = await User.findById(parentId).session(session);
+    const parent = await Parent.findById(parentId).session(session);
   
     if (!kid) {
       throw new Error("Kid not found");
@@ -209,7 +209,7 @@ class PaymentService {
   }
   
   private static async updateParentCanCreateFlag(parentId: any, session: ClientSession) {
-    await User.findByIdAndUpdate(parentId, { canCreate: true }, { session });
+    await Parent.findByIdAndUpdate(parentId, { canCreate: true }, { session });
   }
 
   static async createSchedule(
@@ -317,7 +317,7 @@ class PaymentService {
 
         if (today.getTime() === twentyFourHoursAfterDueDate.getTime()) {
           // Restrict parent from creating new chores or expenses
-          await User.findByIdAndUpdate(parent._id, { canCreate: false });
+          await Parent.findByIdAndUpdate(parent._id, { canCreate: false });
 
           // Send restriction notification
           await sendNotification(

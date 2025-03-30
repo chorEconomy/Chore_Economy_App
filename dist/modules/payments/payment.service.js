@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
-import { Kid, User } from "../users/user.model.js";
+import { Kid, Parent } from "../users/user.model.js";
 import { Chore } from "../chores/chore.model.js";
 import { EChoreStatus, ETransactionName, } from "../../models/enums.js";
 import WalletService from "../wallets/wallet.service.js";
@@ -63,7 +63,7 @@ class PaymentService {
     }
     static async validateKidAndParent(kidId, parentId, session) {
         const kid = await Kid.findById(kidId).session(session);
-        const parent = await User.findById(parentId).session(session);
+        const parent = await Parent.findById(parentId).session(session);
         if (!kid) {
             throw new Error("Kid not found");
         }
@@ -145,7 +145,7 @@ class PaymentService {
         }
     }
     static async updateParentCanCreateFlag(parentId, session) {
-        await User.findByIdAndUpdate(parentId, { canCreate: true }, { session });
+        await Parent.findByIdAndUpdate(parentId, { canCreate: true }, { session });
     }
     static async createSchedule(parentId, scheduleType, startDate) {
         const start = new Date(startDate);
@@ -222,7 +222,7 @@ class PaymentService {
                 twentyFourHoursAfterDueDate.setDate(twentyFourHoursAfterDueDate.getDate() + 1);
                 if (today.getTime() === twentyFourHoursAfterDueDate.getTime()) {
                     // Restrict parent from creating new chores or expenses
-                    await User.findByIdAndUpdate(parent._id, { canCreate: false });
+                    await Parent.findByIdAndUpdate(parent._id, { canCreate: false });
                     // Send restriction notification
                     await sendNotification(parent.fcmToken, "Payment Overdue", `You have missed the payment deadline. You cannot create new chores or expenses until you complete your overdue payment.`);
                 }

@@ -3,7 +3,6 @@ import { NextFunction, Request, Response } from "express";
 import {status_codes} from "../../utils/status_constants.js";
 import { ERole } from "../../models/enums.js";
 import { check_if_user_or_kid_exists } from "../../utils/check_user_exists.utils.js";
-import { AuthenticatedRequest } from "../../models/authenticatedUser.js";
 
 const authorizeKid = async (req: Request, res: Response, next: NextFunction) => {
     const secret = process.env.ACCESS_SECRET;
@@ -32,17 +31,17 @@ const authorizeKid = async (req: Request, res: Response, next: NextFunction) => 
         const payload = jwt.verify(token, secret) as { sub: string };
 
         // Check if the user exists
-        const foundUser = await check_if_user_or_kid_exists(payload.sub);
-        if (!foundUser) {
+        const foundParent = await check_if_user_or_kid_exists(payload.sub);
+        if (!foundParent) {
              res.status(status_codes.HTTP_404_NOT_FOUND).json({
                 status: 404,
-                message: "User not found or token is invalid",
+                message: "Parent not found or token is invalid",
              });
              return
         }
 
         // Check if the user is a child
-        if (foundUser.role !== ERole.Kid) {
+        if (foundParent.role !== ERole.Kid) {
              res.status(status_codes.HTTP_403_FORBIDDEN).json({
                 status: 403,
                 message: "You are not authorized to access this route",

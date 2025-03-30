@@ -64,11 +64,16 @@ const validateAuthInputForKid = (req: Request, res: Response, next: NextFunction
     const sanitizedData = {
         name: req.body.name?.trim() || "",
         photo: req.body.photo?.trim() || "",
+        gender: req.body.gender?.trim() || "",
         password: req.body.password?.trim() || "",
     };
 
     if (!sanitizedData.name) {
         errors.push("Name is required");
+    }
+   
+    if (!sanitizedData.gender) {
+        errors.push("Gender is required");
     }
 
     const passwordErrors = validatePassword(sanitizedData.password);
@@ -143,7 +148,7 @@ function validatePassword(password: string): string[] {
     return errors;
 }
 
-function validateUserRequestPassword(req: Request, res: Response, next: NextFunction) {
+function validateParentRequestPassword(req: Request, res: Response, next: NextFunction) {
     const errors: string[] = [];
     const sanitizedData = { 
         password: req.body.password?.trim() || "",
@@ -160,4 +165,4 @@ function validateUserRequestPassword(req: Request, res: Response, next: NextFunc
 
 
 
-export {validateSignUpInputForParent, validateSignUpInputForAdmin, validateAuthInputForKid, validateSignInInput, validateUserRequestPassword}
+export {validateSignUpInputForParent, validateSignUpInputForAdmin, validateAuthInputForKid, validateSignInInput, validateParentRequestPassword}

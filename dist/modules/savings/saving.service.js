@@ -53,8 +53,7 @@ class SavingService {
         if (amount <= 0) {
             throw new BadRequestError("Amount must be greater than zero");
         }
-        console.log(savingId)
-        const saving = await Saving.findById({_id: savingId})
+        const saving = await Saving.findOne({ _id: savingId });
         if (!saving)
             throw new BadRequestError("Savings goal not found");
         if (saving.isCompleted) {
@@ -73,8 +72,6 @@ class SavingService {
     }
     static async transferToSavings(kidId, amount, saving, mainWallet, savingsWallet, isScheduledPayment, session) {
         const kid = await Kid.findById(kidId);
-        console.log(`Wallet balance from transfer: Amount: ${amount}`);
-
         await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, session);
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;
@@ -127,8 +124,6 @@ class SavingService {
     static async addToSavings(kidId, savingId, amount, isScheduledPayment = false) {
         // Validate input
         const { saving, mainWallet, savingsWallet } = await this.validateSavingsInput(amount, savingId, kidId);
-        console.log(`Wallet balancefrom add:Amount: ${amount}`);
-
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
@@ -178,14 +173,10 @@ class SavingService {
     }
     static async getAllSavingsGoals(kidId) {
         const savings = await Saving.find({ kidId });
-        
-        const savingsWallet = await SavingsWallet.findOne({ kid: kidId }); 
+        const savingsWallet = await SavingsWallet.findOne({ kid: kidId });
         return savings.map((saving) => {
-            console.log(saving)
             const totalSaved = saving.payments.reduce((sum, payment) => sum + payment.amount, 0);
-            console.log(totalSaved)
             const progressPercentage = Math.min(100, Math.round((totalSaved / saving.totalSavingAmount) * 100));
-            console.log(progressPercentage) 
             return {
                 _id: saving._id,
                 title: saving.title,

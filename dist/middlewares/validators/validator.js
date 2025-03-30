@@ -59,10 +59,14 @@ const validateAuthInputForKid = (req, res, next) => {
     const sanitizedData = {
         name: req.body.name?.trim() || "",
         photo: req.body.photo?.trim() || "",
+        gender: req.body.gender?.trim() || "",
         password: req.body.password?.trim() || "",
     };
     if (!sanitizedData.name) {
         errors.push("Name is required");
+    }
+    if (!sanitizedData.gender) {
+        errors.push("Gender is required");
     }
     const passwordErrors = validatePassword(sanitizedData.password);
     errors.push(...passwordErrors);
@@ -126,7 +130,7 @@ function validatePassword(password) {
     }
     return errors;
 }
-function validateUserRequestPassword(req, res, next) {
+function validateParentRequestPassword(req, res, next) {
     const errors = [];
     const sanitizedData = {
         password: req.body.password?.trim() || "",
@@ -141,4 +145,4 @@ function validateUserRequestPassword(req, res, next) {
         res.status(status_codes.HTTP_400_BAD_REQUEST).json({ status: 400, errors });
     }
 }
-export { validateSignUpInputForParent, validateSignUpInputForAdmin, validateAuthInputForKid, validateSignInInput, validateUserRequestPassword };
+export { validateSignUpInputForParent, validateSignUpInputForAdmin, validateAuthInputForKid, validateSignInInput, validateParentRequestPassword };

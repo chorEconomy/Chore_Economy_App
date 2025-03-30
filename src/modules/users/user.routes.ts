@@ -6,7 +6,7 @@ import UserController from "./user.controller.js";
 import otpLimiter from "../../middlewares/otpLimter.js";
 import upload from "../../config/multer.config.js";
 import authorizeParent from "../../middlewares/authentication/parentRoleWare.js";
-import authorizeKid from "../../middlewares/authentication/childRoleWare.js";
+import authorizeAdmin from "../../middlewares/authentication/adminRoleWare.js";
 
 
 authRouter.post("/signup/parent", upload.single("profile-image"), validateSignUpInputForParent, UserController.registerParent)
@@ -25,5 +25,12 @@ authRouter.post("/parent/kids", upload.single("profile-image"), authorizeParent,
 authRouter.delete("/parent/kids/:id", authorizeParent, UserController.deleteKidProfile)
 authRouter.delete("/parent", authorizeParent, UserController.deleteParentProfile)
 authRouter.post("/kids/login", UserController.loginKid)
+authRouter.post("/admin", UserController.registerAdmin)
+authRouter.post("/admin/login", UserController.loginAdmin)
+authRouter.get("/admin/users/count", authorizeAdmin, UserController.fetchTotalUsers)
+authRouter.get("/admin/kids/count", authorizeAdmin, UserController.fetchTotalKids)
+authRouter.get("/admin/parents/count", authorizeAdmin, UserController.fetchTotalParents)
+authRouter.get("/admin/gender-statistics", authorizeAdmin, UserController.fetchGenderStatistics)
+authRouter.get("/admin/parents", authorizeAdmin, UserController.fetchParents)
 
 export default authRouter

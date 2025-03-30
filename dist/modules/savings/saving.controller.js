@@ -117,7 +117,6 @@ class SavingController {
             throw new UnauthorizedError("Unauthorized access");
         }
         const savings = await SavingService.getAllSavingsGoals(kid._id);
-        console.log(savings)
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,

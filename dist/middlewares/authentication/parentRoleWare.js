@@ -26,16 +26,16 @@ const authorizeParent = async (req, res, next) => {
         // Verify the token
         const payload = jwt.verify(token, secret);
         // Check if the user exists
-        const foundUser = await check_if_user_or_kid_exists(payload.sub);
-        if (!foundUser) {
+        const foundParent = await check_if_user_or_kid_exists(payload.sub);
+        if (!foundParent) {
             res.status(status_codes.HTTP_404_NOT_FOUND).json({
                 status: 404,
-                message: "User not found or token is invalid",
+                message: "Parent not found or token is invalid",
             });
             return; // Return to prevent further execution
         }
         // Ensure the user has the "Parent" role
-        if (foundUser.role !== ERole.Parent) {
+        if (foundParent.role !== ERole.Parent) {
             res.status(status_codes.HTTP_403_FORBIDDEN).json({
                 status: 403,
                 message: "You are not authorized to access this route",

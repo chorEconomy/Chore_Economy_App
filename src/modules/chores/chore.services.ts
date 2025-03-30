@@ -5,7 +5,7 @@ import {
 } from "../../utils/file_upload.utils.js";
 import { Chore } from "./chore.model.js";
 import { status_codes } from "../../utils/status_constants.js";
-import { Kid, User } from "../users/user.model.js";
+import { Kid, Parent } from "../users/user.model.js";
 import { EChoreStatus, ERole, EStatus } from "../../models/enums.js";
 import sendNotification from "../../utils/notifications.js";
 import paginate from "../../utils/paginate.js";
@@ -199,7 +199,7 @@ class ChoreService {
 
     await chore.save();
 
-    const parent = await User.findById(chore.parentId);
+    const parent = await Parent.findById(chore.parentId);
 
     if (!parent) {
       throw new NotFoundError("Kid's parent not found");
@@ -244,6 +244,24 @@ class ChoreService {
     );
 
     return chore;
+  }
+
+  static async fetchChoresStatistics() {
+    const totalChores = await Chore.countDocuments();
+    const unclaimed = await Chore.countDocuments({ status: EChoreStatus.Unclaimed });
+    const completed = await Chore.countDocuments({ status: EChoreStatus.Completed });
+    const inProgress = await Chore.countDocuments({ status: EChoreStatus.InProgress });
+
+    const unclaimedPercentage = (unclaimed / totalChores) * 100;
+    const completedPercentage = (completed / totalChores) * 100;
+    const inProgressPercentage = (inProgress / totalChores) * 100;
+
+    return {
+       totalChores: totalChores,
+        unclaimed: unclaimedPercentage, 
+        completed: completedPercentage,
+        inProgress: inProgressPercentage
+    };
   }
 }
 

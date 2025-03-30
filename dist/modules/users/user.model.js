@@ -1,7 +1,7 @@
 import mongoose, { Schema, model } from "mongoose";
 import { EStatus, EGender, ERole } from "../../models/enums.js";
 import bcrypt from "bcrypt";
-const userSchema = new Schema({
+const parentSchema = new Schema({
     firstName: { type: String, required: [true, 'First name is a required field'], trim: true },
     lastName: { type: String, required: [true, 'Last name is a required field'], trim: true },
     fullName: { type: String, required: [true, 'Full name is a required field'], trim: true },
@@ -20,19 +20,40 @@ const userSchema = new Schema({
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
     status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active },
 }, { timestamps: true });
-userSchema.index({ role: 1 });
+parentSchema.index({ role: 1 });
 const kidSchema = new Schema({
-    parentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    parentId: { type: mongoose.Schema.Types.ObjectId, ref: "Parent", required: true },
     name: { type: String, required: true, trim: true },
     password: { type: String, required: true },
     photo: { type: String, default: null },
     role: { type: String, enum: Object.values(ERole), default: ERole.Kid },
     fcmToken: { type: String, default: null },
+    gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
     earnings: { type: Number, default: 0 },
     status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active },
 }, { timestamps: true });
 kidSchema.index({ name: 1 });
-userSchema.pre("save", async function (next) {
+parentSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) {
+        return next();
+    }
+    try {
+        const salt = await bcrypt.genSalt(12);
+        this.password = await bcrypt.hash(String(this.password), salt);
+        next();
+    }
+    catch (error) {
+        next(error); // Pass any error to the next middleware
+    }
+});
+const adminSchema = new Schema({
+    fullName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    fcmToken: { type: String, default: null },
+    role: { type: String, enum: Object.values(ERole), default: ERole.Admin },
+}, { timestamps: true });
+adminSchema.pre("save", async function (next) {
     if (!this.isModified("password")) {
         return next();
     }
@@ -46,5 +67,6 @@ userSchema.pre("save", async function (next) {
     }
 });
 // Export the model
-export const User = model("User", userSchema);
+export const Parent = model("Parent", parentSchema);
+export const Admin = model("Admin", adminSchema);
 export const Kid = model("Kid", kidSchema);

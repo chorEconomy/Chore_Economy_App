@@ -5,7 +5,7 @@ const savingSchema = new Schema({
     title: { type: String, required: true, trim: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
-    nextDueDate: { type: Date, default: null },
+    nextDueDate: { type: Date },
     totalSavingAmount: { type: Number, required: true },
     schedule: { type: String, enum: Object.values(ESavingSchedule), required: true },
     amountFrequency: { type: Number, required: true },

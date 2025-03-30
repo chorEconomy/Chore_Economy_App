@@ -1,5 +1,5 @@
 import ExpenseService from "./expense.service.js";
-import { Kid, User } from "../users/user.model.js";
+import { Kid, Parent } from "../users/user.model.js";
 import { status_codes } from "../../utils/status_constants.js";
 import { ExpenseStatus } from "../../models/enums.js";
 import asyncHandler from "express-async-handler";
@@ -7,7 +7,7 @@ import { BadRequestError, ForbiddenError, UnauthorizedError, UnprocessableEntity
 import sendNotification from "../../utils/notifications.js";
 class ExpenseController {
     static createExpense = asyncHandler(async (req, res, next) => {
-        const parent = await User.findById(req.user);
+        const parent = await Parent.findById(req.user);
         if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
         }
@@ -28,7 +28,7 @@ class ExpenseController {
         return;
     });
     static fetchExpensesByStatus = asyncHandler(async (req, res, next) => {
-        const user = (await User.findById(req.user)) || (await Kid.findById(req.user));
+        const user = (await Parent.findById(req.user)) || (await Kid.findById(req.user));
         if (!user) {
             throw new UnauthorizedError("Unauthorized access");
         }

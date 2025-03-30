@@ -31,24 +31,19 @@ class WalletService {
     static async deductFundsFromWallet(kid, amount, description, transactionName, session) {
         const options = session ? { session } : {};
         let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
-        console.log(`Wallet balance: ${wallet.balance}, Amount: ${amount}`);
-
         if (!wallet) {
             throw new NotFoundError("Wallet not found");
         }
         if (wallet.balance < amount) {
             throw new ForbiddenError("Insufficient funds");
         }
-
-
         wallet.balance -= amount;
-
         await wallet.save(options);
         const transaction = new LedgerTransaction({
             kid: kid._id,
             wallet: wallet._id,
             transactionType: ETransactionType.Debit,
-            transactionName: transactionName,
+            transactionName,
             amount,
             description,
         });

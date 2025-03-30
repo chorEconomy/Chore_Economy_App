@@ -24,6 +24,7 @@
     "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.8",
+    "copyfiles": "^2.4.1",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
@@ -35,7 +36,9 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon ./dist/server.js"
+    "dev": "nodemon ./dist/server.js",
+     "build": "tsc --build && npm run copy-templates",
+    "copy-templates": "copyfiles -u 2 \"src/templates/**/*.ejs\" dist/templates"
   },
   "author": "",
   "license": "ISC",

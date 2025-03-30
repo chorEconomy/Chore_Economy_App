@@ -3,7 +3,7 @@ import { EPaymentSchedule } from "../../models/enums.js";
 const paymentScheduleSchema = new Schema({
     parent: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Parent",
         required: true
     },
     scheduleType: {

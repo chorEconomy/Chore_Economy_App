@@ -1,5 +1,5 @@
 import mongoose, { Schema, model, ObjectId, Document } from "mongoose";
-import { EPaymentSchedule } from "../../models/enums";
+import { EPaymentSchedule } from "../../models/enums.js";
 
 interface IPaymentSchedule extends Document {
   parent: ObjectId;
@@ -12,7 +12,7 @@ interface IPaymentSchedule extends Document {
 const paymentScheduleSchema: Schema = new Schema<IPaymentSchedule>({
   parent: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: "User", 
+    ref: "Parent", 
     required: true 
   },
   scheduleType: { 

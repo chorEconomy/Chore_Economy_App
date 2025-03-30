@@ -1,9 +1,11 @@
 import bcrypt from "bcrypt";
 const comparePassword = async (user_password, stored_password) => {
-    const isVerifiedPassword = await bcrypt.compareSync(user_password, stored_password);
-    if (!isVerifiedPassword) {
-        return false;
+    console.log("Entered Password:", user_password);
+    console.log("Stored Password from DB:", stored_password);
+    if (!user_password || !stored_password) {
+        throw new Error("Password or stored hash is missing!");
     }
-    return true;
+    const trimmedPassword = user_password.trim();
+    return await bcrypt.compare(trimmedPassword, stored_password);
 };
 export default comparePassword;

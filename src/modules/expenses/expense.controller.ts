@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import ExpenseService from "./expense.service.js";
-import { AuthenticatedRequest } from "../../models/authenticatedUser.js";
-import { Kid, User } from "../users/user.model.js";
+import { Kid, Parent } from "../users/user.model.js";
 import { status_codes } from "../../utils/status_constants.js";
 import { EChoreStatus, ExpenseStatus } from "../../models/enums.js";
 import asyncHandler from "express-async-handler";
@@ -15,7 +14,7 @@ import sendNotification from "../../utils/notifications.js";
 
 class ExpenseController {
   static createExpense = asyncHandler(async(req: Request, res: Response, next: NextFunction) => {
-    const parent = await User.findById(req.user);
+    const parent = await Parent.findById(req.user);
 
     if (!parent) {
       throw new UnauthorizedError("Unauthorized access");
@@ -49,7 +48,7 @@ class ExpenseController {
     async (req: Request, res: Response, next: NextFunction) => {
 
       const user =
-        (await User.findById(req.user)) || (await Kid.findById(req.user));
+        (await Parent.findById(req.user)) || (await Kid.findById(req.user));
 
       if (!user) {
         throw new UnauthorizedError("Unauthorized access");

@@ -2,13 +2,13 @@ import { status_codes } from "../../utils/status_constants.js";
 import PaymentService from "./payment.service.js";
 import asyncHandler from "express-async-handler";
 import { BadRequestError, UnauthorizedError } from "../../models/errors.js";
-import { User } from "../users/user.model.js";
+import { Parent } from "../users/user.model.js";
 import dotenv from "dotenv";
 dotenv.config();
 const CRON_SECRET = process.env.CRON_SECRET_KEY;
 class PaymentController {
     static GetKidsForPayment = asyncHandler(async (req, res) => {
-        const parent = await User.findById(req.user);
+        const parent = await Parent.findById(req.user);
         if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
         }
@@ -22,7 +22,7 @@ class PaymentController {
     });
     static InitiatePayment = asyncHandler(async (req, res) => {
         try {
-            const parent = await User.findById(req.user);
+            const parent = await Parent.findById(req.user);
             if (!parent) {
                 throw new UnauthorizedError("Unauthorized access");
             }
@@ -45,7 +45,7 @@ class PaymentController {
         }
     });
     static SchedulePayment = asyncHandler(async (req, res) => {
-        const parent = await User.findById(req.user);
+        const parent = await Parent.findById(req.user);
         if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
         }

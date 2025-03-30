@@ -30,6 +30,7 @@ class WalletController {
             success: true,
             data: wallet
         })
+        return;
     })
 }
 

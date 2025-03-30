@@ -1,5 +1,5 @@
 import ChoreService from "./chore.services.js";
-import { Kid, User } from "../users/user.model.js";
+import { Admin, Kid, Parent } from "../users/user.model.js";
 import { status_codes } from "../../utils/status_constants.js";
 import { EChoreStatus } from "../../models/enums.js";
 import asyncHandler from "express-async-handler";
@@ -7,7 +7,7 @@ import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError, Unpr
 import sendNotification from "../../utils/notifications.js";
 class ChoreController {
     static createChore = asyncHandler(async (req, res, next) => {
-        const parent = await User.findById(req.user);
+        const parent = await Parent.findById(req.user);
         if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
         }
@@ -28,7 +28,7 @@ class ChoreController {
         return;
     });
     static fetchChoresByStatus = asyncHandler(async (req, res, next) => {
-        let user = (await User.findById(req.user)) || (await Kid.findById(req.user));
+        let user = (await Parent.findById(req.user)) || (await Kid.findById(req.user));
         if (!user) {
             throw new UnauthorizedError("Unauthorized access");
         }
@@ -54,7 +54,7 @@ class ChoreController {
         return;
     });
     static fetchChore = asyncHandler(async (req, res, next) => {
-        let user = (await User.findById(req.user)) || (await Kid.findById(req.user));
+        let user = (await Parent.findById(req.user)) || (await Kid.findById(req.user));
         if (!user) {
             throw new UnauthorizedError("Unauthorized access");
         }
@@ -93,7 +93,7 @@ class ChoreController {
         return;
     });
     static approveChore = asyncHandler(async (req, res, next) => {
-        const parent = await User.findById(req.user);
+        const parent = await Parent.findById(req.user);
         if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
         }
@@ -128,7 +128,7 @@ class ChoreController {
         return;
     });
     static denyChore = asyncHandler(async (req, res, next) => {
-        const parent = await User.findById(req.user);
+        const parent = await Parent.findById(req.user);
         if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
         }
@@ -149,6 +149,21 @@ class ChoreController {
                 status: chore.status,
                 denialReason: chore.denialReason,
             },
+        });
+        return;
+    });
+    static fetchChoreStatistics = asyncHandler(async (req, res, next) => {
+        const admin = await Admin.findById(req.user);
+        console.log("admin", admin);
+        if (!admin) {
+            throw new UnauthorizedError("Unauthorized access. You are not allowed to access this route.");
+        }
+        const statistics = await ChoreService.fetchChoresStatistics();
+        res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            message: "Chore statistics fetched successfully",
+            data: statistics,
         });
         return;
     });

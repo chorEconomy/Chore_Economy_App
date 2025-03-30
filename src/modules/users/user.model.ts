@@ -2,7 +2,7 @@ import mongoose, { Schema, model, ObjectId, Document } from "mongoose";
 import { EStatus,  EGender, ERole } from "../../models/enums.js";
 import bcrypt from "bcrypt"
 
-export interface IUser extends Document {
+export interface IParent extends Document {
   firstName: string;
   lastName: string;
   fullName: string;
@@ -25,11 +25,12 @@ export interface IUser extends Document {
 }
 
 interface IKid extends Document {
-  parentId: ObjectId; // Reference to the Parent (User)
+  parentId: ObjectId; // Reference to the Parent (Parent)
   name: string;
   password: string;
   role: ERole;
   earnings: number;
+  gender: EGender;
   fcmToken: string;
   
   photo?: string; // Optional field
@@ -38,7 +39,15 @@ interface IKid extends Document {
   updatedAt: Date;
 }
 
-const userSchema: Schema = new Schema<IUser>(
+interface IAdmin extends Document { 
+  fullName: string,
+  email: string,
+  password: string,
+  role: ERole,
+  fcmToken: string
+}
+
+const parentSchema: Schema = new Schema<IParent>(
   {
     firstName: { type: String, required: [true, 'First name is a required field'], trim: true },
     lastName: { type: String, required: [true, 'Last name is a required field'], trim: true },
@@ -61,16 +70,17 @@ const userSchema: Schema = new Schema<IUser>(
   { timestamps: true }
 );
 
-userSchema.index({ role: 1 });  
+parentSchema.index({ role: 1 });  
 
 const kidSchema = new Schema<IKid>(
   {
-    parentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },  
+    parentId: { type: mongoose.Schema.Types.ObjectId, ref: "Parent", required: true },  
     name: { type: String, required: true, trim: true },
     password: { type: String, required: true },
     photo: { type: String, default: null },
     role: { type: String, enum: Object.values(ERole), default: ERole.Kid },
-    fcmToken: {type: String, default: null},
+    fcmToken: { type: String, default: null },
+    gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
     earnings: {type: Number, default: 0},
     status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active},
   },
@@ -79,7 +89,30 @@ const kidSchema = new Schema<IKid>(
 
 kidSchema.index({ name: 1 })
 
-userSchema.pre("save", async function (next) {
+parentSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    return next();
+  }
+  try {
+    const salt = await bcrypt.genSalt(12); 
+    this.password = await bcrypt.hash(String(this.password), salt);
+    next();
+  } catch (error: any) {
+    next(error); // Pass any error to the next middleware
+  }
+});
+
+const adminSchema = new Schema<IAdmin>({
+  fullName: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  fcmToken: { type: String, default: null },
+  role: { type: String, enum: Object.values(ERole), default: ERole.Admin },
+},
+  { timestamps: true }
+);
+
+adminSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next();
   }
@@ -94,5 +127,6 @@ userSchema.pre("save", async function (next) {
 
 
 // Export the model
-export const User = model<IUser>("User", userSchema);
+export const Parent = model<IParent>("Parent", parentSchema);
+export const Admin = model<IAdmin>("Admin", adminSchema);
 export const Kid = model<IKid>("Kid", kidSchema);

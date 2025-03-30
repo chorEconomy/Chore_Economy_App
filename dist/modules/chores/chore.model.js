@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 import { EChoreStatus } from "../../models/enums.js";
 import mongoose from "mongoose";
 const choreSchema = new Schema({
-    parentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Links the task to a parent
+    parentId: { type: mongoose.Schema.Types.ObjectId, ref: "Parent", required: true }, // Links the task to a parent
     kidId: { type: mongoose.Schema.Types.ObjectId, ref: "Kid", default: null }, // Links the task to a kid
     photo: { type: String, default: null },
     title: { type: String, required: [true, 'Title is a required field'], trim: true },
