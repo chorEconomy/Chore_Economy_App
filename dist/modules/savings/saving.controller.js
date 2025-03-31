@@ -83,20 +83,6 @@ class SavingController {
         });
         return;
     });
-    static WithdrawFromSavings = asyncHandler(async (req, res) => {
-        const kid = await Kid.findById(req.user);
-        if (!kid) {
-            throw new UnauthorizedError("Unauthorized access");
-        }
-        const { savingId } = req.body;
-        const result = await SavingService.withdrawFromSavings(kid._id, savingId);
-        res.status(status_codes.HTTP_200_OK).json({
-            status: 200,
-            success: true,
-            data: result
-        });
-        return;
-    });
     static GetSavingsHistory = asyncHandler(async (req, res) => {
         const kid = await Kid.findById(req.user);
         if (!kid) {

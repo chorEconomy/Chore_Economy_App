@@ -29,7 +29,6 @@ interface IKid extends Document {
   name: string;
   password: string;
   role: ERole;
-  earnings: number;
   gender: EGender;
   fcmToken: string;
   
@@ -44,6 +43,8 @@ interface IAdmin extends Document {
   email: string,
   password: string,
   role: ERole,
+  verificationToken: string
+  verificationTokenExpiresAt: Date
   fcmToken: string
 }
 
@@ -63,7 +64,7 @@ const parentSchema: Schema = new Schema<IParent>(
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     lastLogin: {type: Date, default: Date.now},
-    role: { type: String, enum: Object.values(ERole)},
+    role: { type: String, enum: Object.values(ERole),  default: ERole.Parent },
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
     status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active},
   },
@@ -81,7 +82,6 @@ const kidSchema = new Schema<IKid>(
     role: { type: String, enum: Object.values(ERole), default: ERole.Kid },
     fcmToken: { type: String, default: null },
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
-    earnings: {type: Number, default: 0},
     status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active},
   },
   { timestamps: true }
@@ -107,6 +107,8 @@ const adminSchema = new Schema<IAdmin>({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   fcmToken: { type: String, default: null },
+  verificationToken: String,
+  verificationTokenExpiresAt: Date,
   role: { type: String, enum: Object.values(ERole), default: ERole.Admin },
 },
   { timestamps: true }

@@ -16,7 +16,7 @@ const parentSchema = new Schema({
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     lastLogin: { type: Date, default: Date.now },
-    role: { type: String, enum: Object.values(ERole) },
+    role: { type: String, enum: Object.values(ERole), default: ERole.Parent },
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
     status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active },
 }, { timestamps: true });
@@ -29,7 +29,6 @@ const kidSchema = new Schema({
     role: { type: String, enum: Object.values(ERole), default: ERole.Kid },
     fcmToken: { type: String, default: null },
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
-    earnings: { type: Number, default: 0 },
     status: { type: String, enum: Object.values(EStatus), required: true, default: EStatus.Active },
 }, { timestamps: true });
 kidSchema.index({ name: 1 });
@@ -51,6 +50,8 @@ const adminSchema = new Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     fcmToken: { type: String, default: null },
+    verificationToken: String,
+    verificationTokenExpiresAt: Date,
     role: { type: String, enum: Object.values(ERole), default: ERole.Admin },
 }, { timestamps: true });
 adminSchema.pre("save", async function (next) {

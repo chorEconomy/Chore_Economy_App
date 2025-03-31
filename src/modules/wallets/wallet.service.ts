@@ -26,6 +26,7 @@ class WalletService {
         }
         
         wallet.balance += amount;
+        wallet.mainBalance += amount;
         wallet.totalEarnings += amount;
         await wallet.save(options);
       
@@ -50,7 +51,9 @@ class WalletService {
         amount: any, 
         description: string, 
         transactionName: string,
-        session?: ClientSession
+        isExpense: boolean = false,
+        isWithdrawal: boolean = false,
+        session?: ClientSession,
       ) {
         const options = session ? { session } : {};
       
@@ -64,8 +67,16 @@ class WalletService {
           throw new ForbiddenError("Insufficient funds");
         }
         
-        wallet.balance -= amount;
-        
+      wallet.balance -= amount;
+      
+      if (isExpense) { 
+        wallet.mainBalance -= amount;
+      }
+      if (isWithdrawal) {
+        wallet.mainBalance -= amount;
+        wallet.balance = 0;
+      }
+
         await wallet.save(options);
         
         const transaction = new LedgerTransaction({

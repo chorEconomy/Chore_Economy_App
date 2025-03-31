@@ -152,11 +152,10 @@ class ChoreController {
         });
         return;
     });
-    static fetchChoreStatistics = asyncHandler(async (req, res, next) => {
+    static fetchChoreStatistics = asyncHandler(async (req, res) => {
         const admin = await Admin.findById(req.user);
-        console.log("admin", admin);
         if (!admin) {
-            throw new UnauthorizedError("Unauthorized access. You are not allowed to access this route.");
+            throw new UnauthorizedError("Unauthorized access");
         }
         const statistics = await ChoreService.fetchChoresStatistics();
         res.status(status_codes.HTTP_200_OK).json({
@@ -164,6 +163,23 @@ class ChoreController {
             success: true,
             message: "Chore statistics fetched successfully",
             data: statistics,
+        });
+        return;
+    });
+    static fetchChoresByParentId = asyncHandler(async (req, res) => {
+        const admin = Admin.findById(req.user);
+        if (!admin) {
+            throw new UnauthorizedError("Unauthorized access");
+        }
+        const parentId = req.params.parentId;
+        if (!parentId) {
+            throw new BadRequestError("Please provide a valid parent id");
+        }
+        const chores = await ChoreService.fetchChoreDetailsForParent(parentId);
+        res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            data: chores
         });
         return;
     });

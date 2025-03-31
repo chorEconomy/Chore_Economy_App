@@ -2,12 +2,13 @@ import Stripe from "stripe";
 import * as dotenv from "dotenv";
 import { Kid, Parent } from "../users/user.model.js";
 import { Chore } from "../chores/chore.model.js";
-import { EChoreStatus, ETransactionName, } from "../../models/enums.js";
+import { EChoreStatus, ETransactionName } from "../../models/enums.js";
 import WalletService from "../wallets/wallet.service.js";
 import { PaymentSchedule } from "./payment.module.js";
-import { BadRequestError } from "../../models/errors.js";
+import { BadRequestError, NotFoundError, } from "../../models/errors.js";
 import sendNotification from "../../utils/notifications.js";
 import mongoose from "mongoose";
+import { Wallet } from "../wallets/wallet.model.js";
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 class PaymentService {
@@ -27,7 +28,7 @@ class PaymentService {
                 kidName: kid.name,
                 totalAmount,
                 approvedChores,
-                hasApprovedChores: approvedChores.length > 0
+                hasApprovedChores: approvedChores.length > 0,
             };
         }));
     }
@@ -75,32 +76,32 @@ class PaymentService {
     static async processStripePayment(totalAmount) {
         try {
             // Validate input amount
-            if (typeof totalAmount !== 'number' || totalAmount <= 0) {
-                throw new Error('Invalid payment amount');
+            if (typeof totalAmount !== "number" || totalAmount <= 0) {
+                throw new Error("Invalid payment amount");
             }
             // Convert to cents and round to avoid floating point issues
             const amountInCents = Math.round(totalAmount * 100);
             // Create PaymentIntent with additional recommended parameters
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amountInCents,
-                currency: 'usd'
+                currency: "usd",
             });
             // Log successful creation (remove in production)
             console.log(`Created PaymentIntent: ${paymentIntent.id}`);
             return paymentIntent;
         }
         catch (error) {
-            console.error('Stripe PaymentIntent creation failed:', error);
+            console.error("Stripe PaymentIntent creation failed:", error);
             // Handle specific Stripe errors
-            if (error.type === 'StripeInvalidRequestError') {
+            if (error.type === "StripeInvalidRequestError") {
                 throw new Error(`Payment processing error: ${error.message}`);
             }
             // Handle rate limiting
-            if (error.type === 'StripeRateLimitError') {
-                throw new Error('Payment system busy. Please try again shortly.');
+            if (error.type === "StripeRateLimitError") {
+                throw new Error("Payment system busy. Please try again shortly.");
             }
             // Generic error fallback
-            throw new Error('Failed to process payment. Please try again.');
+            throw new Error("Failed to process payment. Please try again.");
         }
     }
     static async getApprovedChoresAndTotalAmount(kidId, session) {
@@ -175,6 +176,35 @@ class PaymentService {
         });
         await paymentSchedule.save();
         return paymentSchedule;
+    }
+    //  static async withdrawMoney(kidId: ObjectId, savingId: string) {
+    //         const saving = await Saving.findById(savingId);
+    //         if (!saving) throw new NotFoundError("Savings goal not found");
+    //         if (!saving.isCompleted) throw new ForbiddenError("Cannot withdraw from incomplete savings goal");
+    //         const wallet = await SavingsWallet.findOne({ kid: kidId });
+    //         if (!wallet) throw new NotFoundError("Savings wallet not found");
+    //         // Find the savings goal in the wallet
+    //         const savingsGoal = wallet.savingsGoals.find((goal: ISavingsGoal) => goal.savingId.toString() === savingId);
+    //         if (!savingsGoal) throw new NotFoundError("Savings goal not found in wallet");
+    //         // Transfer to main wallet (implement this in WalletService)
+    //         await WalletService.addFundsToWallet(
+    //             kidId,
+    //             savingsGoal.amountSaved,
+    //             `Withdrawal from savings: ${saving.title}`,
+    //             ETransactionName.SavingsWithdrawal
+    //         );
+    //         // Update savings wallet
+    //         wallet.mainBalance -= savingsGoal.amountSaved;
+    //         wallet.savingsGoals = wallet.savingsGoals.filter((goal: ISavingsGoal) => goal.savingId.toString() !== savingId);
+    //         await wallet.save();
+    //         return { amount: savingsGoal.amountSaved };
+    //     }
+    static async withdrawMoney(kidId) {
+        const wallet = await Wallet.findOne({ kid: kidId });
+        if (!wallet)
+            throw new NotFoundError("Wallet not found");
+        const updatedWallet = await WalletService.deductFundsFromWallet(kidId, wallet.mainBalance, `Withdrawal from wallet`, ETransactionName.Withdrawal, false, true);
+        return updatedWallet;
     }
     static async checkDuePayments() {
         const today = new Date();

@@ -14,6 +14,7 @@ class WalletService {
             });
         }
         wallet.balance += amount;
+        wallet.mainBalance += amount;
         wallet.totalEarnings += amount;
         await wallet.save(options);
         console.log("I got here");
@@ -28,7 +29,7 @@ class WalletService {
         await transaction.save(options);
         return wallet;
     }
-    static async deductFundsFromWallet(kid, amount, description, transactionName, session) {
+    static async deductFundsFromWallet(kid, amount, description, transactionName, isExpense = false, isWithdrawal = false, session) {
         const options = session ? { session } : {};
         let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
         if (!wallet) {
@@ -38,6 +39,13 @@ class WalletService {
             throw new ForbiddenError("Insufficient funds");
         }
         wallet.balance -= amount;
+        if (isExpense) {
+            wallet.mainBalance -= amount;
+        }
+        if (isWithdrawal) {
+            wallet.mainBalance -= amount;
+            wallet.balance = 0;
+        }
         await wallet.save(options);
         const transaction = new LedgerTransaction({
             kid: kid._id,

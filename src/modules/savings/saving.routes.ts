@@ -7,7 +7,7 @@ savingsRouter.post("/", authorizeKid, SavingController.CreateSaving);
 savingsRouter.get("/:id", authorizeKid, SavingController.FetchSaving); 
 savingsRouter.delete("/:id", authorizeKid, SavingController.DeleteSaving);
 savingsRouter.post("/:id/pay", authorizeKid, SavingController.MakePayment);
-savingsRouter.post("/withdraw", authorizeKid, SavingController.WithdrawFromSavings);
+
 savingsRouter.get("/:id/history", authorizeKid, SavingController.GetSavingsHistory);
 savingsRouter.get("/", authorizeKid, SavingController.GetAllSavingsGoals);
 savingsRouter.get("/savings-reminders", SavingController.TriggerSavingsReminders);

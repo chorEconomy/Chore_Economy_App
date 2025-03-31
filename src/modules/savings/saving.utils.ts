@@ -1,4 +1,4 @@
-import { ESavingSchedule } from "../../models/enums";
+import { ESavingSchedule } from "../../models/enums.js";
 
 export default class SavingUtils { 
     static calculateNextDueDate(lastPaymentDate: Date, schedule: ESavingSchedule): Date {

@@ -15,5 +15,6 @@ choreRouter.patch("/:id", authorizeKid, ChoreController.takeChore)
 choreRouter.post("/:id/deny", authorizeParent, ChoreController.denyChore)
 choreRouter.post("/:id/complete", upload.array("chore-image"), authorizeKid, ChoreController.completeChore)
 choreRouter.get("/statistics", authorizeAdmin, ChoreController.fetchChoreStatistics)        
+choreRouter.get("/:parentId", authorizeAdmin, ChoreController.fetchChoresByParentId)        
 
 export default choreRouter

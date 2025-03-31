@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import ExpenseService from "./expense.service.js";
-import { Kid, Parent } from "../users/user.model.js";
+import { Admin, Kid, Parent } from "../users/user.model.js";
 import { status_codes } from "../../utils/status_constants.js";
 import { EChoreStatus, ExpenseStatus } from "../../models/enums.js";
 import asyncHandler from "express-async-handler";
@@ -109,6 +109,7 @@ class ExpenseController {
         throw new BadRequestError("Expense ID is required")
       }
 
+  
       const result = await ExpenseService.payExpense(kid, expenseId);
   
       res.status(status_codes.HTTP_200_OK).json({
@@ -119,6 +120,29 @@ class ExpenseController {
       return;
     }
   )
+
+  static fetchExpensesByParentId = asyncHandler(async (req: Request, res: Response) => {
+     const admin = Admin.findById(req.user);
+    
+        if (!admin) {
+          throw new UnauthorizedError("Unauthorized access");
+        }
+    
+        const parentId = req.params.parentId;
+        
+        if (!parentId) {
+          throw new BadRequestError("Please provide a valid parent id");
+        }
+        
+        const expenses = await ExpenseService.fetchExpenseDetailsForParents(parentId);
+    
+        res.status(status_codes.HTTP_200_OK).json({
+          status: 200,
+          success: true,
+          data: expenses
+        });
+        return;
+  })
 }
 
 export default ExpenseController;

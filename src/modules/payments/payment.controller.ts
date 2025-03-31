@@ -58,6 +58,23 @@ class PaymentController {
     }
   });
 
+   static WithdrawFromSavings = asyncHandler(async (req: Request, res: Response) => {
+      const kid: any = await Kid.findById(req.user);
+  
+      if (!kid) {
+           throw new UnauthorizedError("Unauthorized access");
+      }
+      
+      const result = await PaymentService.withdrawMoney(kid._id);
+
+     res.status(status_codes.HTTP_200_OK).json({
+        status: 200,
+        success: true,
+        data: result
+      });
+      return
+    });
+
   static SchedulePayment = asyncHandler(async (req: Request, res: Response) => {
     const parent = await Parent.findById(req.user);
     if (!parent) {

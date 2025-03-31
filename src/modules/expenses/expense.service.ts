@@ -2,8 +2,10 @@ import { Expense } from "./expense.model.js";
 import { ERole, ETransactionName, ExpenseStatus } from "../../models/enums.js";
 import paginate from "../../utils/paginate.js";
 import WalletService from "../wallets/wallet.service.js";
-import { NotFoundError } from "../../models/errors.js";
+import { ForbiddenError, NotFoundError } from "../../models/errors.js";
 import { Wallet } from "../wallets/wallet.model.js";
+import mongoose from "mongoose";
+import sendNotification from "../../utils/notifications.js";
 
 class ExpenseService {
   static async createExpense(parent: any, body: any) {  
@@ -48,13 +50,17 @@ class ExpenseService {
     }
     return await paginate(Expense, page, limit, "", filter)
   }
-
   
   static async payExpense(kid: any, expenseId: any) {
-    const expense = await Expense.findOne({ kidId: kid._id, _id: expenseId });
+ 
+    const expense = await Expense.findOne({ _id: expenseId });
 
     if (!expense) {
       throw new Error("Expense not found");
+    }
+
+    if (expense.status === ExpenseStatus.Paid) {
+       throw new ForbiddenError("You've already paid for this expense")
     }
 
     const wallet = await Wallet.findOne({ kid: kid._id });
@@ -63,14 +69,19 @@ class ExpenseService {
       throw new NotFoundError("Wallet not found");
     }
 
-    await WalletService.deductFundsFromWallet(kid, expense.amount, "Expense Payment", ETransactionName.ExpensePayment);
+    await WalletService.deductFundsFromWallet(kid, expense.amount, "Expense Payment", ETransactionName.ExpensePayment, true, false);
 
     expense.status = ExpenseStatus.Paid;
+    expense.kidId = kid._id
+
     await expense.save();
-
-    // Credit the parent's account (if needed)
-
+ 
     return { wallet, expense }
+  }
+
+  static async fetchExpenseDetailsForParents(parentId: any) {
+    const expenses = await Expense.find({ parentId: parentId }).select("name kidId createdAt dueDate amount status").populate("kidId").select("name").lean();
+    return expenses
   }
 }
 

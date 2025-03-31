@@ -3,6 +3,7 @@ import mongoose, {Schema, Document} from 'mongoose';
 interface IWallet extends Document {
     kid: mongoose.Schema.Types.ObjectId;
     balance: number;
+    mainBalance: number;
     totalEarnings: number;
     
 }
@@ -28,6 +29,10 @@ const WalletSchema: Schema = new mongoose.Schema<IWallet>(
             type: Number,
             default: 0,
         },
+        mainBalance: {
+            type: Number,
+            default: 0,
+        },
         totalEarnings: {
             type: Number,
             default: 0,
@@ -47,7 +52,7 @@ const SavingsWalletSchema: Schema = new mongoose.Schema<ISavingsWallet>(
         balance: {
             type: Number,
             default: 0,
-        },
+        }, 
         totalEarnings: {
             type: Number,
             default: 0,

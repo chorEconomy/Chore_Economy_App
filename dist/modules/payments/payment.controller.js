@@ -2,7 +2,7 @@ import { status_codes } from "../../utils/status_constants.js";
 import PaymentService from "./payment.service.js";
 import asyncHandler from "express-async-handler";
 import { BadRequestError, UnauthorizedError } from "../../models/errors.js";
-import { Parent } from "../users/user.model.js";
+import { Kid, Parent } from "../users/user.model.js";
 import dotenv from "dotenv";
 dotenv.config();
 const CRON_SECRET = process.env.CRON_SECRET_KEY;
@@ -43,6 +43,19 @@ class PaymentController {
             });
             return;
         }
+    });
+    static WithdrawFromSavings = asyncHandler(async (req, res) => {
+        const kid = await Kid.findById(req.user);
+        if (!kid) {
+            throw new UnauthorizedError("Unauthorized access");
+        }
+        const result = await PaymentService.withdrawMoney(kid._id);
+        res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            data: result
+        });
+        return;
     });
     static SchedulePayment = asyncHandler(async (req, res) => {
         const parent = await Parent.findById(req.user);

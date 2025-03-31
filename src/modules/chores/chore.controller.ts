@@ -250,8 +250,7 @@ class ChoreController {
 
   static fetchChoreStatistics = asyncHandler(
     async (req: Request, res: Response) => {
-      const admin = await Admin.findById(req.user);
-console.log(admin);
+      const admin = await Admin.findById(req.user); 
 
       if (!admin) {
         throw new UnauthorizedError("Unauthorized access");
@@ -267,6 +266,29 @@ console.log(admin);
       });
       return;
     });
+  
+  static fetchChoresByParentId = asyncHandler(async (req: Request, res: Response) => {
+    const admin = Admin.findById(req.user);
+
+    if (!admin) {
+      throw new UnauthorizedError("Unauthorized access");
+    }
+
+    const parentId = req.params.parentId;
+
+    if (!parentId) {
+      throw new BadRequestError("Please provide a valid parent id");
+    }
+    
+    const chores = await ChoreService.fetchChoreDetailsForParent(parentId);
+
+    res.status(status_codes.HTTP_200_OK).json({
+      status: 200,
+      success: true,
+      data: chores
+    });
+    return;
+  })
 }
 
 export default ChoreController;

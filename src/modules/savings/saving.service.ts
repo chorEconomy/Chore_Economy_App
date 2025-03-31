@@ -81,7 +81,7 @@ class SavingService {
         const mainWallet = await Wallet.findOne({ kid: kidId });
         if (!mainWallet) throw new BadRequestError("Main wallet not found");
         
-        if (mainWallet.balance < amount) {
+        if (mainWallet.mainBalance < amount) {
             throw new BadRequestError("Insufficient funds in main wallet");
         }
 
@@ -102,7 +102,7 @@ class SavingService {
     ) {
         const kid = await Kid.findById(kidId);
 
-        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, session);
+        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, false, false, session);
 
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;
@@ -219,34 +219,7 @@ class SavingService {
         }
     }
 
-    static async withdrawFromSavings(kidId: ObjectId, savingId: string) {
-        const saving = await Saving.findById(savingId);
-        if (!saving) throw new NotFoundError("Savings goal not found");
-        
-        if (!saving.isCompleted) throw new ForbiddenError("Cannot withdraw from incomplete savings goal");
-
-        const wallet = await SavingsWallet.findOne({ kid: kidId });
-        if (!wallet) throw new NotFoundError("Savings wallet not found");
-
-        // Find the savings goal in the wallet
-        const savingsGoal = wallet.savingsGoals.find((goal: ISavingsGoal) => goal.savingId.toString() === savingId);
-        if (!savingsGoal) throw new NotFoundError("Savings goal not found in wallet");
-
-        // Transfer to main wallet (implement this in WalletService)
-        await WalletService.addFundsToWallet(
-            kidId,
-            savingsGoal.amountSaved,
-            `Withdrawal from savings: ${saving.title}`,
-            ETransactionName.SavingsWithdrawal
-        );
-
-        // Update savings wallet
-        wallet.balance -= savingsGoal.amountSaved;
-        wallet.savingsGoals = wallet.savingsGoals.filter((goal: ISavingsGoal) => goal.savingId.toString() !== savingId);
-        await wallet.save();
-
-        return { amount: savingsGoal.amountSaved };
-    }
+   
 
   
     static async getSavingsHistory(kidId: ObjectId, savingId: string) {

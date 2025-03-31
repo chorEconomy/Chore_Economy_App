@@ -430,7 +430,7 @@ export class AuthService {
         return res.status(status_codes.HTTP_404_NOT_FOUND).json({
           status: 404,
           success: false,
-          message: "Parent not found",
+          message: "Parent or admin not found",
         });
       }
 
@@ -453,12 +453,23 @@ export class AuthService {
 
       await user.save();
       sendResetPasswordEmail(user.firstName, user.email, otp);
+      // if (user.role == ERole.Parent) {
+      //   await user.save();
+      //   sendResetPasswordEmail(user.firstName, user.email, otp);
+      // }
+     
+    //  else if (user.role == ERole.Admin) {
+    //     await user.save();
+    //     sendResetPasswordEmail(user.fullName, user.email, otp);
+    //   }
 
-      return res.status(status_codes.HTTP_200_OK).json({
+
+       res.status(status_codes.HTTP_200_OK).json({
         success: true,
         status: 200,
         message: "Password reset OTP sent to your email.",
-      });
+       });
+       return
     } catch (error) {
       console.error("Forgot password error:", error);
       return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({

@@ -4,7 +4,7 @@ import { Kid } from "../users/user.model.js";
 import { Wallet } from "../wallets/wallet.model.js";
 import LedgerTransaction from "../ledgers/ledger.model.js";
 import { Saving, SavingsWallet } from "./saving.model.js";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../../models/errors.js";
+import { BadRequestError, NotFoundError } from "../../models/errors.js";
 import mongoose from "mongoose";
 import WalletService from "../wallets/wallet.service.js";
 import sendNotification from "../../utils/notifications.js";
@@ -62,7 +62,7 @@ class SavingService {
         const mainWallet = await Wallet.findOne({ kid: kidId });
         if (!mainWallet)
             throw new BadRequestError("Main wallet not found");
-        if (mainWallet.balance < amount) {
+        if (mainWallet.mainBalance < amount) {
             throw new BadRequestError("Insufficient funds in main wallet");
         }
         const savingsWallet = await SavingsWallet.findOne({ kid: kidId });
@@ -72,7 +72,7 @@ class SavingService {
     }
     static async transferToSavings(kidId, amount, saving, mainWallet, savingsWallet, isScheduledPayment, session) {
         const kid = await Kid.findById(kidId);
-        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, session);
+        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, false, false, session);
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;
         await this.updateSavingsWalletGoal(savingsWallet, saving._id, amount, session);
@@ -139,27 +139,6 @@ class SavingService {
         finally {
             session.endSession();
         }
-    }
-    static async withdrawFromSavings(kidId, savingId) {
-        const saving = await Saving.findById(savingId);
-        if (!saving)
-            throw new NotFoundError("Savings goal not found");
-        if (!saving.isCompleted)
-            throw new ForbiddenError("Cannot withdraw from incomplete savings goal");
-        const wallet = await SavingsWallet.findOne({ kid: kidId });
-        if (!wallet)
-            throw new NotFoundError("Savings wallet not found");
-        // Find the savings goal in the wallet
-        const savingsGoal = wallet.savingsGoals.find((goal) => goal.savingId.toString() === savingId);
-        if (!savingsGoal)
-            throw new NotFoundError("Savings goal not found in wallet");
-        // Transfer to main wallet (implement this in WalletService)
-        await WalletService.addFundsToWallet(kidId, savingsGoal.amountSaved, `Withdrawal from savings: ${saving.title}`, ETransactionName.SavingsWithdrawal);
-        // Update savings wallet
-        wallet.balance -= savingsGoal.amountSaved;
-        wallet.savingsGoals = wallet.savingsGoals.filter((goal) => goal.savingId.toString() !== savingId);
-        await wallet.save();
-        return { amount: savingsGoal.amountSaved };
     }
     static async getSavingsHistory(kidId, savingId) {
         const saving = await Saving.findById({ kidId: kidId, _id: savingId });

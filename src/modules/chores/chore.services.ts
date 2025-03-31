@@ -263,6 +263,11 @@ class ChoreService {
         inProgress: inProgressPercentage
     };
   }
+
+  static async fetchChoreDetailsForParent(parentId: any) {
+    const chores = await Chore.find({ parentId: parentId }).where('status').ne(EChoreStatus.Unclaimed).select("title kidId dueDate createdAt earn status").populate("kidId").select("name").lean();
+    return chores;
+  }
 }
 
 export default ChoreService;

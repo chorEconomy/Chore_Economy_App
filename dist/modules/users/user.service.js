@@ -339,7 +339,7 @@ export class AuthService {
                 return res.status(status_codes.HTTP_404_NOT_FOUND).json({
                     status: 404,
                     success: false,
-                    message: "Parent not found",
+                    message: "Parent or admin not found",
                 });
             }
             // Prevent multiple OTP requests within a short time
@@ -357,11 +357,20 @@ export class AuthService {
             user.verificationTokenExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes expiration
             await user.save();
             sendResetPasswordEmail(user.firstName, user.email, otp);
-            return res.status(status_codes.HTTP_200_OK).json({
+            // if (user.role == ERole.Parent) {
+            //   await user.save();
+            //   sendResetPasswordEmail(user.firstName, user.email, otp);
+            // }
+            //  else if (user.role == ERole.Admin) {
+            //     await user.save();
+            //     sendResetPasswordEmail(user.fullName, user.email, otp);
+            //   }
+            res.status(status_codes.HTTP_200_OK).json({
                 success: true,
                 status: 200,
                 message: "Password reset OTP sent to your email.",
             });
+            return;
         }
         catch (error) {
             console.error("Forgot password error:", error);
@@ -888,57 +897,52 @@ export class AuthService {
             loggedAdmin,
         };
     }
-  static async FetchTotalNumberOfUsers() {
-    const totalParents = await this.FetchTotalNumberOfParents()
-    const totalKids = await this.FetchTotalNumberOfKids()
-    const totalAdmins = await Admin.countDocuments()
-
-    const totalUsers = totalParents.totalParents + totalKids.totalKids + totalAdmins
-    return {totalUsers: totalUsers};
-  }
-
-  static async FetchTotalNumberOfParents() {
-    const totalParents = await Parent.countDocuments()
-    return {totalParents: totalParents}
-  }
-
-  static async FetchTotalNumberOfKids() {
-    const totalKids = await Kid.countDocuments()
-    return {totalKids: totalKids}
-  }
-  static async getGenderStatistics() {
-    try {
-        // Execute all counts in parallel for better performance
-        const [maleParents, femaleParents, maleKids, femaleKids] = await Promise.all([
-            Parent.countDocuments({ gender: EGender.Male }),
-            Parent.countDocuments({ gender: EGender.Female }),
-            Kid.countDocuments({ gender: EGender.Male }),
-            Kid.countDocuments({ gender: EGender.Female })
-        ]);
-
-        const maleStats = maleParents + maleKids;
-        const femaleStats = femaleParents + femaleKids;
-        const totalStats = maleStats + femaleStats;
-
-        // Handle division by zero (empty database case)
-        if (totalStats === 0) {
+    static async FetchTotalNumberOfUsers() {
+        const totalParents = await this.FetchTotalNumberOfParents();
+        const totalKids = await this.FetchTotalNumberOfKids();
+        const totalAdmins = await Admin.countDocuments();
+        const totalUsers = totalParents.totalParents + totalKids.totalKids + totalAdmins;
+        return { totalUsers: totalUsers };
+    }
+    static async FetchTotalNumberOfParents() {
+        const totalParents = await Parent.countDocuments();
+        return { totalParents: totalParents };
+    }
+    static async FetchTotalNumberOfKids() {
+        const totalKids = await Kid.countDocuments();
+        return { totalKids: totalKids };
+    }
+    static async getGenderStatistics() {
+        try {
+            // Execute all counts in parallel for better performance
+            const [maleParents, femaleParents, maleKids, femaleKids] = await Promise.all([
+                Parent.countDocuments({ gender: EGender.Male }),
+                Parent.countDocuments({ gender: EGender.Female }),
+                Kid.countDocuments({ gender: EGender.Male }),
+                Kid.countDocuments({ gender: EGender.Female })
+            ]);
+            const maleStats = maleParents + maleKids;
+            const femaleStats = femaleParents + femaleKids;
+            const totalStats = maleStats + femaleStats;
+            // Handle division by zero (empty database case)
+            if (totalStats === 0) {
+                return {
+                    men: "0.00",
+                    women: "0.00",
+                    note: "No records found in database"
+                };
+            }
+            // Format percentages with 2 decimal places
             return {
-                men: "0.00",
-                women: "0.00",
-                note: "No records found in database"
+                men: (maleStats / totalStats * 100).toFixed(2),
+                women: (femaleStats / totalStats * 100).toFixed(2),
             };
         }
-
-        // Format percentages with 2 decimal places
-        return {
-            men: (maleStats / totalStats * 100).toFixed(2),
-            women: (femaleStats / totalStats * 100).toFixed(2),
-        };
-    } catch (error) {
-        console.error("Error in getGenderStatistics:", error);
-        throw new Error("Failed to retrieve gender statistics");
+        catch (error) {
+            console.error("Error in getGenderStatistics:", error);
+            throw new Error("Failed to retrieve gender statistics");
+        }
     }
-}
     static async fetchParents(page = 1, limit = 10) {
         const skip = (page - 1) * limit;
         const parents = await Parent.find({})

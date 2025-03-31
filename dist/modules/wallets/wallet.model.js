@@ -10,6 +10,10 @@ const WalletSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    mainBalance: {
+        type: Number,
+        default: 0,
+    },
     totalEarnings: {
         type: Number,
         default: 0,
