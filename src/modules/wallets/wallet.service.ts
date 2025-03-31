@@ -51,7 +51,6 @@ class WalletService {
         amount: any, 
         description: string, 
         transactionName: string,
-        isExpense: boolean = false,
         isWithdrawal: boolean = false,
         session?: ClientSession,
       ) {
@@ -68,10 +67,7 @@ class WalletService {
         }
         
       wallet.balance -= amount;
-      
-      if (isExpense) { 
-        wallet.mainBalance -= amount;
-      }
+  
       if (isWithdrawal) {
         wallet.mainBalance -= amount;
         wallet.balance = 0;

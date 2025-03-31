@@ -72,7 +72,7 @@ class SavingService {
     }
     static async transferToSavings(kidId, amount, saving, mainWallet, savingsWallet, isScheduledPayment, session) {
         const kid = await Kid.findById(kidId);
-        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, false, false, session);
+        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, false, session);
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;
         await this.updateSavingsWalletGoal(savingsWallet, saving._id, amount, session);

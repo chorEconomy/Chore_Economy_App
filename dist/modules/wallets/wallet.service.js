@@ -29,7 +29,7 @@ class WalletService {
         await transaction.save(options);
         return wallet;
     }
-    static async deductFundsFromWallet(kid, amount, description, transactionName, isExpense = false, isWithdrawal = false, session) {
+    static async deductFundsFromWallet(kid, amount, description, transactionName, isWithdrawal = false, session) {
         const options = session ? { session } : {};
         let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
         if (!wallet) {
@@ -39,9 +39,6 @@ class WalletService {
             throw new ForbiddenError("Insufficient funds");
         }
         wallet.balance -= amount;
-        if (isExpense) {
-            wallet.mainBalance -= amount;
-        }
         if (isWithdrawal) {
             wallet.mainBalance -= amount;
             wallet.balance = 0;

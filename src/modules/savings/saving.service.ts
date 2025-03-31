@@ -102,7 +102,7 @@ class SavingService {
     ) {
         const kid = await Kid.findById(kidId);
 
-        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, false, false, session);
+        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, false, session);
 
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;

@@ -313,8 +313,7 @@ class PaymentService {
       wallet.mainBalance,
       `Withdrawal from wallet`,
       ETransactionName.Withdrawal,
-      false,
-      true
+      true,
     );
 
     return updatedWallet;

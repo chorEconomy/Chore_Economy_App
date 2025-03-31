@@ -55,7 +55,7 @@ class ExpenseService {
         if (!wallet) {
             throw new NotFoundError("Wallet not found");
         }
-        await WalletService.deductFundsFromWallet(kid, expense.amount, "Expense Payment", ETransactionName.ExpensePayment, true, false);
+        await WalletService.deductFundsFromWallet(kid, expense.amount, "Expense Payment", ETransactionName.ExpensePayment, false);
         expense.status = ExpenseStatus.Paid;
         expense.kidId = kid._id;
         await expense.save();

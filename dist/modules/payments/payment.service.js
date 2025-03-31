@@ -203,7 +203,7 @@ class PaymentService {
         const wallet = await Wallet.findOne({ kid: kidId });
         if (!wallet)
             throw new NotFoundError("Wallet not found");
-        const updatedWallet = await WalletService.deductFundsFromWallet(kidId, wallet.mainBalance, `Withdrawal from wallet`, ETransactionName.Withdrawal, false, true);
+        const updatedWallet = await WalletService.deductFundsFromWallet(kidId, wallet.mainBalance, `Withdrawal from wallet`, ETransactionName.Withdrawal, true);
         return updatedWallet;
     }
     static async checkDuePayments() {
