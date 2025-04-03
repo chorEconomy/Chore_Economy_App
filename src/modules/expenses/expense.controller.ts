@@ -11,6 +11,7 @@ import {
   UnprocessableEntityError,
 } from "../../models/errors.js";
 import sendNotification from "../../utils/notifications.js";
+import {Notification} from "../notifications/notification.model.js";
 
 class ExpenseController {
   static createExpense = asyncHandler(async(req: Request, res: Response, next: NextFunction) => {
@@ -26,6 +27,15 @@ class ExpenseController {
                 "Payment Overdue",
                 `You cannot create new expenses until you complete your overdue payment.`
               );
+
+      const notification = await new Notification({
+        parentId: parent._id,
+        title: "Payment Overdue",
+        message: `You cannot create new expenses until you complete your overdue payment.`
+      });
+
+      await notification.save();
+
         throw new ForbiddenError("You cannot create new expenses until you complete your overdue payment.");
     }
     

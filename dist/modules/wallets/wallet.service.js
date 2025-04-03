@@ -17,7 +17,6 @@ class WalletService {
         wallet.mainBalance += amount;
         wallet.totalEarnings += amount;
         await wallet.save(options);
-        console.log("I got here");
         const transaction = new LedgerTransaction({
             kid: kid._id,
             wallet: wallet._id,
@@ -29,20 +28,83 @@ class WalletService {
         await transaction.save(options);
         return wallet;
     }
-    static async deductFundsFromWallet(kid, amount, description, transactionName, isWithdrawal = false, session) {
+    static async deductFundsFromWallet(kid, amount, description, transactionName, session) {
         const options = session ? { session } : {};
         let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
         if (!wallet) {
             throw new NotFoundError("Wallet not found");
         }
-        if (wallet.balance < amount) {
+        if (amount > wallet.mainBalance) {
+            throw new ForbiddenError("Insufficient funds");
+        }
+        wallet.mainBalance -= amount;
+        wallet.balance = 0;
+        await wallet.save(options);
+        const transaction = new LedgerTransaction({
+            kid: kid._id,
+            wallet: wallet._id,
+            transactionType: ETransactionType.Debit,
+            transactionName,
+            amount,
+            description,
+        });
+        await transaction.save(options);
+        return wallet;
+    }
+    static async deductSavingsFromWallet(kid, amount, description, transactionName, session) {
+        const options = session ? { session } : {};
+        let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
+        if (!wallet) {
+            throw new NotFoundError("Wallet not found");
+        }
+        if (amount > wallet.mainBalance) {
+            throw new ForbiddenError("Insufficient funds");
+        }
+        wallet.mainBalance -= amount;
+        await wallet.save(options);
+        const transaction = new LedgerTransaction({
+            kid: kid._id,
+            wallet: wallet._id,
+            transactionType: ETransactionType.Debit,
+            transactionName,
+            amount,
+            description,
+        });
+        await transaction.save(options);
+        return wallet;
+    }
+    static async deductExpenseFromWallet(kid, amount, description, transactionName, session) {
+        const options = session ? { session } : {};
+        let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
+        if (!wallet) {
+            throw new NotFoundError("Wallet not found");
+        }
+        if (amount > wallet.balance) {
             throw new ForbiddenError("Insufficient funds");
         }
         wallet.balance -= amount;
-        if (isWithdrawal) {
-            wallet.mainBalance -= amount;
-            wallet.balance = 0;
+        await wallet.save(options);
+        const transaction = new LedgerTransaction({
+            kid: kid._id,
+            wallet: wallet._id,
+            transactionType: ETransactionType.Debit,
+            transactionName,
+            amount,
+            description,
+        });
+        await transaction.save(options);
+        return wallet;
+    }
+    static async saveMoney(kid, amount, description, transactionName, session) {
+        const options = session ? { session } : {};
+        let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
+        if (!wallet) {
+            throw new NotFoundError("Wallet not found");
         }
+        if (amount > wallet.balance) {
+            throw new ForbiddenError("Insufficient funds");
+        }
+        wallet.balance -= amount;
         await wallet.save(options);
         const transaction = new LedgerTransaction({
             kid: kid._id,

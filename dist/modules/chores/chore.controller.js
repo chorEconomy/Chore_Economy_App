@@ -5,6 +5,7 @@ import { EChoreStatus } from "../../models/enums.js";
 import asyncHandler from "express-async-handler";
 import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError, UnprocessableEntityError, } from "../../models/errors.js";
 import sendNotification from "../../utils/notifications.js";
+import { Notification } from "../notifications/notification.model.js";
 class ChoreController {
     static createChore = asyncHandler(async (req, res, next) => {
         const parent = await Parent.findById(req.user);
@@ -13,6 +14,12 @@ class ChoreController {
         }
         if (!parent.canCreate) {
             await sendNotification(parent.fcmToken, "Payment Overdue", `You cannot create new chores until you complete your overdue payment.`);
+            const notification = await new Notification({
+                parentId: parent._id,
+                title: "Payment Overdue",
+                message: `You cannot create new chores until you complete your overdue payment.`
+            });
+            await notification.save();
             throw new ForbiddenError("You cannot create new chores until you complete your overdue payment.");
         }
         if (!req.body) {

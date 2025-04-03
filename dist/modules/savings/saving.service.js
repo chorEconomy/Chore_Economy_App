@@ -4,11 +4,12 @@ import { Kid } from "../users/user.model.js";
 import { Wallet } from "../wallets/wallet.model.js";
 import LedgerTransaction from "../ledgers/ledger.model.js";
 import { Saving, SavingsWallet } from "./saving.model.js";
-import { BadRequestError, NotFoundError } from "../../models/errors.js";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../../models/errors.js";
 import mongoose from "mongoose";
 import WalletService from "../wallets/wallet.service.js";
 import sendNotification from "../../utils/notifications.js";
 import SavingUtils from "./saving.utils.js";
+import { Notification } from "../notifications/notification.model.js";
 class SavingService {
     static async createSaving(data, kidId) {
         const { title, startDate, totalSavingAmount, schedule, amountFrequency } = data;
@@ -72,7 +73,7 @@ class SavingService {
     }
     static async transferToSavings(kidId, amount, saving, mainWallet, savingsWallet, isScheduledPayment, session) {
         const kid = await Kid.findById(kidId);
-        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, false, session);
+        await WalletService.saveMoney(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, session);
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;
         await this.updateSavingsWalletGoal(savingsWallet, saving._id, amount, session);
@@ -182,6 +183,12 @@ class SavingService {
                 if (SavingUtils.shouldSendReminder(today, lastPaymentDate, saving.schedule)) {
                     if (saving.kidId.fcmToken) {
                         await sendNotification(saving.kidId.fcmToken, "Savings Reminder", `Time to make your ${saving.schedule} payment for: ${saving.title}`);
+                        const notification = await new Notification({
+                            kidId: saving.kidId._id,
+                            title: "Savings Reminder",
+                            message: `Time to make your ${saving.schedule} payment for: ${saving.title}`
+                        });
+                        await notification.save();
                     }
                     // Update nextDueDate to the new calculated due date
                     saving.nextDueDate = SavingUtils.calculateNextDueDate(lastPaymentDate, saving.schedule);
@@ -194,6 +201,17 @@ class SavingService {
                 // Continue with next saving even if one fails
             }
         }
+    }
+    static async withdrawCompletedSaving(savingId, kid) {
+        const saving = await Saving.findById(savingId);
+        if (!saving) {
+            throw new NotFoundError("Saving not found");
+        }
+        if (!saving.isCompleted) {
+            throw new ForbiddenError("You can't withdraw an uncompleted saving");
+        }
+        const wallet = await WalletService.deductSavingsFromWallet(kid, saving.totalSavingAmount, "Withdraw completed savings", ETransactionName.SavingsWithdrawal);
+        return wallet;
     }
 }
 export default SavingService;

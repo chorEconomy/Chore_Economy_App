@@ -7,5 +7,5 @@ paymentRouter.get("/kids", authorizeParent, PaymentController.GetKidsForPayment)
 paymentRouter.get("/check-due-payments", PaymentController.CheckOverduePayments);
 paymentRouter.post("/initiate", authorizeParent, PaymentController.InitiatePayment);
 paymentRouter.post("/schedule", authorizeParent, PaymentController.SchedulePayment);
-paymentRouter.post("/withdraw", authorizeKid, PaymentController.WithdrawFromSavings);
+paymentRouter.post("/withdraw", authorizeKid, PaymentController.WithdrawFromWallet);
 export default paymentRouter;

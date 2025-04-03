@@ -7,6 +7,7 @@ import paymentRouter from "./modules/payments/payment.route.js";
 import {status_codes} from "./utils/status_constants.js";
 import savingsRouter from "./modules/savings/saving.routes.js";
 import walletRouter from "./modules/wallets/wallet.routes.js";
+import notificationRouter from "./modules/notifications/notification.routes.js";
 import { globalErrorHandler } from "./middlewares/global-error-middleware.js";
 
 // import cors from "cors"
@@ -33,6 +34,7 @@ app.use("/api/v1/expenses", expenseRouter)
 app.use("/api/v1/savings", savingsRouter)
 app.use("/api/v1/payments", paymentRouter)
 app.use("/api/v1/wallets", walletRouter)
+app.use("/api/v1/notifications", notificationRouter)
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
  res.status(status_codes.HTTP_404_NOT_FOUND).json({

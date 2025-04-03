@@ -44,12 +44,12 @@ class PaymentController {
             return;
         }
     });
-    static WithdrawFromSavings = asyncHandler(async (req, res) => {
+    static WithdrawFromWallet = asyncHandler(async (req, res) => {
         const kid = await Kid.findById(req.user);
         if (!kid) {
             throw new UnauthorizedError("Unauthorized access");
         }
-        const result = await PaymentService.withdrawMoney(kid._id);
+        const result = await PaymentService.withdrawMoney(kid);
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,

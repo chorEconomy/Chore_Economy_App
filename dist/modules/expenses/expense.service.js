@@ -55,11 +55,11 @@ class ExpenseService {
         if (!wallet) {
             throw new NotFoundError("Wallet not found");
         }
-        await WalletService.deductFundsFromWallet(kid, expense.amount, "Expense Payment", ETransactionName.ExpensePayment, false);
+        const newWallet = await WalletService.deductExpenseFromWallet(kid, expense.amount, "Expense Payment", ETransactionName.ExpensePayment);
         expense.status = ExpenseStatus.Paid;
         expense.kidId = kid._id;
         await expense.save();
-        return { wallet, expense };
+        return { newWallet, expense };
     }
     static async fetchExpenseDetailsForParents(parentId) {
         const expenses = await Expense.find({ parentId: parentId }).select("name kidId createdAt dueDate amount status").populate("kidId").select("name").lean();

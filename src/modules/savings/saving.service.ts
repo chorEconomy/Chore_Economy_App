@@ -10,6 +10,7 @@ import mongoose, {ObjectId} from "mongoose";
 import WalletService from "../wallets/wallet.service.js";
 import sendNotification from "../../utils/notifications.js";
 import SavingUtils from "./saving.utils.js";
+import {Notification} from "../notifications/notification.model.js";
 
 class SavingService {
     static async createSaving(data: any, kidId: ObjectId) {
@@ -102,7 +103,7 @@ class SavingService {
     ) {
         const kid = await Kid.findById(kidId);
 
-        await WalletService.deductFundsFromWallet(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, false, session);
+        await WalletService.saveMoney(kid, amount, `Deposit to savings: ${saving.title}`, ETransactionName.SavingsContribution, session);
 
         // 3. Add to savings wallet and update goal
         savingsWallet.balance += amount;
@@ -277,6 +278,14 @@ class SavingService {
                             "Savings Reminder",
                             `Time to make your ${saving.schedule} payment for: ${saving.title}`
                         );
+
+                        const notification = await new Notification({
+                            kidId:saving.kidId._id,
+                            title: "Savings Reminder",
+                            message: `Time to make your ${saving.schedule} payment for: ${saving.title}`
+                          });
+                  
+                          await notification.save();
                     }
 
                     // Update nextDueDate to the new calculated due date
@@ -294,6 +303,21 @@ class SavingService {
                 // Continue with next saving even if one fails
             }
         }
+    }
+
+    static async withdrawCompletedSaving(savingId: any, kid: any) {
+        const saving = await Saving.findById(savingId)
+        if (!saving) {
+            throw new NotFoundError("Saving not found");
+        }
+        
+        if (!saving.isCompleted) {
+            throw new ForbiddenError("You can't withdraw an uncompleted saving")
+        }
+
+        const wallet = await WalletService.deductSavingsFromWallet(kid, saving.totalSavingAmount, "Withdraw completed savings", ETransactionName.SavingsWithdrawal)
+
+        return wallet;
     }
 } 
 

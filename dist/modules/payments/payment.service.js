@@ -9,6 +9,7 @@ import { BadRequestError, NotFoundError, } from "../../models/errors.js";
 import sendNotification from "../../utils/notifications.js";
 import mongoose from "mongoose";
 import { Wallet } from "../wallets/wallet.model.js";
+import { Notification } from "../notifications/notification.model.js";
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 class PaymentService {
@@ -177,33 +178,11 @@ class PaymentService {
         await paymentSchedule.save();
         return paymentSchedule;
     }
-    //  static async withdrawMoney(kidId: ObjectId, savingId: string) {
-    //         const saving = await Saving.findById(savingId);
-    //         if (!saving) throw new NotFoundError("Savings goal not found");
-    //         if (!saving.isCompleted) throw new ForbiddenError("Cannot withdraw from incomplete savings goal");
-    //         const wallet = await SavingsWallet.findOne({ kid: kidId });
-    //         if (!wallet) throw new NotFoundError("Savings wallet not found");
-    //         // Find the savings goal in the wallet
-    //         const savingsGoal = wallet.savingsGoals.find((goal: ISavingsGoal) => goal.savingId.toString() === savingId);
-    //         if (!savingsGoal) throw new NotFoundError("Savings goal not found in wallet");
-    //         // Transfer to main wallet (implement this in WalletService)
-    //         await WalletService.addFundsToWallet(
-    //             kidId,
-    //             savingsGoal.amountSaved,
-    //             `Withdrawal from savings: ${saving.title}`,
-    //             ETransactionName.SavingsWithdrawal
-    //         );
-    //         // Update savings wallet
-    //         wallet.mainBalance -= savingsGoal.amountSaved;
-    //         wallet.savingsGoals = wallet.savingsGoals.filter((goal: ISavingsGoal) => goal.savingId.toString() !== savingId);
-    //         await wallet.save();
-    //         return { amount: savingsGoal.amountSaved };
-    //     }
-    static async withdrawMoney(kidId) {
-        const wallet = await Wallet.findOne({ kid: kidId });
+    static async withdrawMoney(kid) {
+        const wallet = await Wallet.findOne({ kid: kid._id });
         if (!wallet)
             throw new NotFoundError("Wallet not found");
-        const updatedWallet = await WalletService.deductFundsFromWallet(kidId, wallet.mainBalance, `Withdrawal from wallet`, ETransactionName.Withdrawal, true);
+        const updatedWallet = await WalletService.deductFundsFromWallet(Kid, wallet.balance, "Withdrawal from wallet", ETransactionName.Withdrawal);
         return updatedWallet;
     }
     static async checkDuePayments() {
@@ -241,11 +220,24 @@ class PaymentService {
                 if (schedule.nextDueDate.getTime() === tomorrow.getTime()) {
                     // Send 24-hour reminder
                     await sendNotification(parent.fcmToken, "Payment Reminder", `Reminder: You have unpaid chores. Payment is due tomorrow.`);
+                    // Create a notification in the database
+                    const notification = await new Notification({
+                        parentId: parent._id,
+                        title: "Payment Reminder",
+                        message: `Reminder: You have unpaid chores. Payment is due tomorrow.`
+                    });
+                    await notification.save();
                 }
                 // Check if today is the due date
                 if (schedule.nextDueDate.getTime() === today.getTime()) {
                     // Send due date notification
                     await sendNotification(parent.fcmToken, "Payment Due", `Reminder: You have unpaid chores. Payment is due today.`);
+                    const notification = await new Notification({
+                        parentId: parent._id,
+                        title: "Payment Due",
+                        message: `Reminder: You have unpaid chores. Payment is due today.`
+                    });
+                    await notification.save();
                 }
                 // Check if today is 24 hours after the due date
                 const twentyFourHoursAfterDueDate = new Date(schedule.nextDueDate);
@@ -255,6 +247,12 @@ class PaymentService {
                     await Parent.findByIdAndUpdate(parent._id, { canCreate: false });
                     // Send restriction notification
                     await sendNotification(parent.fcmToken, "Payment Overdue", `You have missed the payment deadline. You cannot create new chores or expenses until you complete your overdue payment.`);
+                    const notification = await new Notification({
+                        parentId: parent._id,
+                        title: "Payment Overdue",
+                        message: `You have missed the payment deadline. You cannot create new chores or expenses until you complete your overdue payment.`
+                    });
+                    await notification.save();
                 }
             }
         }

@@ -12,6 +12,7 @@ import {
   UnprocessableEntityError,
 } from "../../models/errors.js";
 import sendNotification from "../../utils/notifications.js";
+import { Notification } from "../notifications/notification.model.js";
 
 class ChoreController {
   static createChore = asyncHandler(
@@ -28,6 +29,14 @@ class ChoreController {
           "Payment Overdue",
           `You cannot create new chores until you complete your overdue payment.`
         );
+
+        const notification = await new Notification({
+          parentId: parent._id,
+          title: "Payment Overdue",
+          message: `You cannot create new chores until you complete your overdue payment.`
+        });
+
+        await notification.save();
         throw new ForbiddenError(
           "You cannot create new chores until you complete your overdue payment."
         );

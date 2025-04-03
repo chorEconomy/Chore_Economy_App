@@ -6,6 +6,7 @@ import sendNotification from "../../utils/notifications.js";
 import paginate from "../../utils/paginate.js";
 import toTitleCase from "../../utils/string_formatter.js";
 import { BadRequestError, NotFoundError } from "../../models/errors.js";
+import { Notification } from "../notifications/notification.model.js";
 class ChoreService {
     static async createChore(parent, body, file) {
         const { title, description, earn, dueDate } = body;
@@ -23,7 +24,13 @@ class ChoreService {
             photo: choreImageUrl,
         });
         await newChore.save();
-        await sendNotification(parent.fcmToken, "Task Created", "You've successfully created a new task");
+        await sendNotification(parent.fcmToken, "New Chore Created", "You've successfully created a new task");
+        const notification = await new Notification({
+            parentId: parent._id,
+            title: "New Chore Created",
+            message: `You've successfully created a new task`,
+        });
+        await notification.save();
         return newChore;
     }
     static async fetchAllChoresFromDB(user, owner, page, limit) {
@@ -95,7 +102,13 @@ class ChoreService {
         chore.isRewardApproved = true;
         chore.status = EChoreStatus.Approved;
         chore.save();
-        await sendNotification(kid.fcmToken, "Chore Reviewed!", "Your parent has approved your completed chore. Great job!");
+        await sendNotification(kid.fcmToken, "Chore Approved!", "Your parent has approved your completed chore. Great job!");
+        const notification = await new Notification({
+            kidId: kid._id,
+            title: "Chore Approved!",
+            message: "Your parent has approved your completed chore. Great job!",
+        });
+        await notification.save();
         return chore;
     }
     static async takeChore(kid, choreId) {
@@ -137,7 +150,13 @@ class ChoreService {
         if (!parent) {
             throw new NotFoundError("Kid's parent not found");
         }
-        await sendNotification(parent.fcmToken, kid.name, `${toTitleCase(chore.title)}\nCompleted on ${chore.completedDate}`);
+        await sendNotification(parent.fcmToken, "Chore submitted", `${toTitleCase(chore.title)} submitted on ${chore.completedDate}`);
+        const notification = await new Notification({
+            parentId: parent._id,
+            title: `Chore submitted`,
+            message: `${toTitleCase(chore.title)} submitted on ${chore.completedDate}`,
+        });
+        await notification.save();
         return chore;
     }
     static async denyChore(parent, choreId, reason) {
@@ -156,13 +175,25 @@ class ChoreService {
             throw new NotFoundError("Kid not found");
         }
         await sendNotification(kid.fcmToken, "Chore Rejected", "Your parent has rejected your completed chore. Please review and try again.");
+        const notification = await new Notification({
+            kidId: kid._id,
+            title: "Chore Rejected",
+            message: "Your parent has rejected your completed chore. Please review and try again.",
+        });
+        await notification.save();
         return chore;
     }
     static async fetchChoresStatistics() {
         const totalChores = await Chore.countDocuments();
-        const unclaimed = await Chore.countDocuments({ status: EChoreStatus.Unclaimed });
-        const completed = await Chore.countDocuments({ status: EChoreStatus.Completed });
-        const inProgress = await Chore.countDocuments({ status: EChoreStatus.InProgress });
+        const unclaimed = await Chore.countDocuments({
+            status: EChoreStatus.Unclaimed,
+        });
+        const completed = await Chore.countDocuments({
+            status: EChoreStatus.Completed,
+        });
+        const inProgress = await Chore.countDocuments({
+            status: EChoreStatus.InProgress,
+        });
         const unclaimedPercentage = (unclaimed / totalChores) * 100;
         const completedPercentage = (completed / totalChores) * 100;
         const inProgressPercentage = (inProgress / totalChores) * 100;
@@ -170,11 +201,17 @@ class ChoreService {
             totalChores: totalChores,
             unclaimed: unclaimedPercentage,
             completed: completedPercentage,
-            inProgress: inProgressPercentage
+            inProgress: inProgressPercentage,
         };
     }
     static async fetchChoreDetailsForParent(parentId) {
-        const chores = await Chore.find({ parentId: parentId }).where('status').ne(EChoreStatus.Unclaimed).select("title kidId dueDate createdAt earn status").populate("kidId").select("name").lean();
+        const chores = await Chore.find({ parentId: parentId })
+            .where("status")
+            .ne(EChoreStatus.Unclaimed)
+            .select("title kidId dueDate createdAt earn status")
+            .populate("kidId")
+            .select("name")
+            .lean();
         return chores;
     }
 }
