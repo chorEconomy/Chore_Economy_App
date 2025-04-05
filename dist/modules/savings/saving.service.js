@@ -142,7 +142,8 @@ class SavingService {
         }
     }
     static async getSavingsHistory(kidId, savingId) {
-        const saving = await Saving.findById({ kidId: kidId, _id: savingId });
+        console.log(savingId)
+         const saving = await Saving.findOne({kidId: kidId, _id: savingId});
         if (!saving)
             throw new NotFoundError("Saving goal not found");
         return saving.payments.map((payment) => ({

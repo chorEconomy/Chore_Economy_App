@@ -126,9 +126,13 @@ class SavingController {
          throw new UnauthorizedError("Unauthorized access");
     }
 
-    const { savingId } = req.params;
+    const { id } = req.params;
     
-    const history = await SavingService.getSavingsHistory(kid._id, savingId);
+    if (!id) {
+      throw new BadRequestError("Please provide a valid saving id")
+    }
+    
+    const history = await SavingService.getSavingsHistory(kid._id, id);
 
     res.status(status_codes.HTTP_200_OK).json({
       status: 200,
@@ -183,12 +187,12 @@ class SavingController {
          throw new UnauthorizedError("Unauthorized access");
       }
       
-      const { savingId } = req.params
-      if (!savingId) {
+      const { id } = req.params
+      if (!id) {
         throw new BadRequestError("Saving Id is required!");
       }
 
-      const wallet = await SavingService.withdrawCompletedSaving(savingId, kid);
+      const wallet = await SavingService.withdrawCompletedSaving(id, kid);
 
       res.status(status_codes.HTTP_200_OK).json({
         status: 200,
