@@ -1,4 +1,4 @@
-import { check_if_user_or_kid_exists } from "../../utils/check_user_exists.utils.js";
+import { check_if_user_exists } from "../../utils/check_user_exists.utils.js";
 import { status_codes } from "../../utils/status_constants.js";
 import jwt from "jsonwebtoken";
 const authenticateUser = async (req, res, next) => {
@@ -42,7 +42,7 @@ const authenticateUser = async (req, res, next) => {
                 });
                 return;
             }
-            const foundUser = await check_if_user_or_kid_exists(payload?.sub);
+            const foundUser = await check_if_user_exists(payload?.sub);
             if (!foundUser) {
                 res.status(status_codes.HTTP_404_NOT_FOUND).json({
                     status: 404,

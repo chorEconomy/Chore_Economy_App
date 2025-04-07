@@ -1,4 +1,4 @@
-import { check_if_user_exist_with_email, check_if_user_or_kid_exists, } from "../../utils/check_user_exists.utils.js";
+import { check_if_user_exist_with_email, check_if_user_exists, } from "../../utils/check_user_exists.utils.js";
 import generateOTP from "../../utils/otp.utils.js";
 import { Admin, Kid, Parent } from "./user.model.js";
 import { sendResetPasswordEmail, sendVerificationEmail, sendWelcomeEmail, } from "../../utils/email_sender.utils.js";
@@ -291,7 +291,7 @@ export class AuthService {
     }
     static async Logout(req, res) {
         try {
-            const user = await check_if_user_or_kid_exists(req.user);
+            const user = await check_if_user_exists(req.user);
             if (!user) {
                 return res
                     .status(status_codes.HTTP_401_UNAUTHORIZED)

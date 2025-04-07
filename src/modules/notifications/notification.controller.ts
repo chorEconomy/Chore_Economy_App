@@ -2,23 +2,18 @@ import { NextFunction, Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import  NotificationService  from "./notification.service";
 import { status_codes } from "../../utils/status_constants";
-import { BadRequestError } from "../../models/errors";
+import { BadRequestError, UnauthorizedError } from "../../models/errors";
+import { findUserAndRoleById } from "../../utils/check_user_exists.utils";
  class NotificationController {
     static FecthNotifications = asyncHandler(async (req: Request, res: Response) => { 
-    
-        const role = req.query.role?.toString();
         
-        if (!role) {
-            throw new BadRequestError("Role is required!");
-        }
+        const { role, user } = await findUserAndRoleById(req.user);
 
-        const { userId } = req.params;
-
-        if (!userId) {
-            throw new BadRequestError("User Id is required!");
+        if (!user) {
+            throw new UnauthorizedError("Unauthorized access!");
         }
         
-        const notifications = await NotificationService.fetchNotifications(userId, role);
+        const notifications = await NotificationService.fetchNotifications(user._id);
 
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
@@ -29,19 +24,14 @@ import { BadRequestError } from "../../models/errors";
     })
 
     static FetchNotificationCount = asyncHandler(async (req: Request, res: Response) => {
-        const role = req.query.role?.toString()
+         
+        const { role, user } = await findUserAndRoleById(req.user);
 
-        if (!role) {
-            throw new BadRequestError("Role is required!");
+        if (!user) {
+            throw new UnauthorizedError("Unauthorized access");
         }
 
-        const { userId } = req.params;
-        
-        if (!userId) {
-            throw new BadRequestError("User Id is required!");
-        }
-
-        const notificationCount = await NotificationService.fetchNotificationCount(userId, role);
+        const notificationCount = await NotificationService.fetchNotificationCount(user._id);
 
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
@@ -50,6 +40,23 @@ import { BadRequestError } from "../../models/errors";
         });
         return;
     });
+     
+     static MarkNotificationAsRead = asyncHandler(async (req: Request, res: Response) => { 
+        const { id } = req.params;
+        
+        if (!id) {
+            throw new BadRequestError("Notification Id is required!");
+        }
+
+        const notification = await NotificationService.markNotificationAsRead(id);
+
+        res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            data: notification
+        });
+        return;  
+     })
 }
 
 export default NotificationController

@@ -13,13 +13,17 @@ class ExpenseController {
             throw new UnauthorizedError("Unauthorized access");
         }
         if (!parent.canCreate) {
-            await sendNotification(parent.fcmToken, "Payment Overdue", `You cannot create new expenses until you complete your overdue payment.`);
             const notification = await new Notification({
-                parentId: parent._id,
+                recipient: {
+                    id: parent._id,
+                    role: "Parent",
+                },
+                recipientId: parent._id,
                 title: "Payment Overdue",
-                message: `You cannot create new expenses until you complete your overdue payment.`
+                message: `You cannot create new expenses until you complete your overdue payment.`,
             });
             await notification.save();
+            await sendNotification(parent.fcmToken, notification.title, notification.message, { notificationId: notification._id });
             throw new ForbiddenError("You cannot create new expenses until you complete your overdue payment.");
         }
         if (!req.body) {
@@ -72,7 +76,7 @@ class ExpenseController {
         res.status(status_codes.HTTP_200_OK).json({
             success: true,
             status: 200,
-            data: result
+            data: result,
         });
         return;
     });
@@ -89,7 +93,7 @@ class ExpenseController {
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,
-            data: expenses
+            data: expenses,
         });
         return;
     });

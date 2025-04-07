@@ -35,19 +35,25 @@ class ChoreService {
 
     await newChore.save();
 
-    await sendNotification(
-      parent.fcmToken,
-      "New Chore Created",
-      "You've successfully created a new task"
-    );
-
     const notification = await new Notification({
-      parentId: parent._id, 
+      recipient: {
+        id: parent._id,
+        role: "Parent"
+      },
+      recipientId: parent._id,
       title: "New Chore Created",
       message: `You've successfully created a new task`,
     });
 
     await notification.save();
+
+
+    await sendNotification(
+      parent.fcmToken,
+      notification.title,
+      notification.message,
+      { notificationId: notification._id }
+    ); 
 
     return newChore;
   }
@@ -145,18 +151,24 @@ class ChoreService {
 
     chore.save();
 
-    await sendNotification(
-      kid.fcmToken,
-      "Chore Approved!",
-      "Your parent has approved your completed chore. Great job!"
-    );
-
     const notification = await new Notification({
-      kidId: kid._id,
+      recipient: {
+        id: kid._id,
+        role: "Kid"
+      },
+      recipientId: kid._id,
       title: "Chore Approved!",
       message: "Your parent has approved your completed chore. Great job!",
     });
+
     await notification.save();
+
+    await sendNotification(
+      kid.fcmToken,
+      notification.title,
+      notification.message,
+      { notificationId: notification._id }
+    );
 
     return chore;
   }
@@ -221,14 +233,12 @@ class ChoreService {
       throw new NotFoundError("Kid's parent not found");
     }
 
-    await sendNotification(
-      parent.fcmToken,
-      "Chore submitted",
-      `${toTitleCase(chore.title)} submitted on ${chore.completedDate}`
-    );
-
     const notification = await new Notification({
-      parentId: parent._id,
+      recipient: {
+        id: parent._id,
+        role: "Parent"
+      },
+      recipientId: parent._id,
       title: `Chore submitted`,
       message: `${toTitleCase(chore.title)} submitted on ${
         chore.completedDate
@@ -236,6 +246,13 @@ class ChoreService {
     });
 
     await notification.save();
+
+    await sendNotification(
+      parent.fcmToken,
+      notification.title,
+      notification.message,
+      { notificationId: notification._id }
+    );
 
     return chore;
   }
@@ -263,20 +280,25 @@ class ChoreService {
       throw new NotFoundError("Kid not found");
     }
 
-    await sendNotification(
-      kid.fcmToken,
-      "Chore Rejected",
-      "Your parent has rejected your completed chore. Please review and try again."
-    );
-
     const notification = await new Notification({
-      kidId: kid._id,
+      recipient: {
+        id: kid._id,
+        role: "Kid"
+      },
+      recipientId: kid._id,
       title: "Chore Rejected",
       message:
         "Your parent has rejected your completed chore. Please review and try again.",
     });
 
     await notification.save();
+
+    await sendNotification(
+      kid.fcmToken,
+      notification.title,
+      notification.message,
+      { notificationId: notification._id }
+    );
 
     return chore;
   }

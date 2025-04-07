@@ -1,6 +1,6 @@
 import {
   check_if_user_exist_with_email,
-  check_if_user_or_kid_exists,
+  check_if_user_exists,
   getUserByEmailAndRole,
 } from "../../utils/check_user_exists.utils.js";
 import { Response, Request } from "express";
@@ -373,7 +373,7 @@ export class AuthService {
 
   static async Logout(req: Request, res: Response) {
     try {
-      const user = await check_if_user_or_kid_exists(req.user);
+      const user = await check_if_user_exists(req.user);
       if (!user) {
         return res
           .status(status_codes.HTTP_401_UNAUTHORIZED)

@@ -67,10 +67,10 @@ class PaymentService {
         const kid = await Kid.findById(kidId).session(session);
         const parent = await Parent.findById(parentId).session(session);
         if (!kid) {
-            throw new Error("Kid not found");
+            throw new NotFoundError("Kid not found");
         }
         if (!parent) {
-            throw new Error("Parent not found");
+            throw new NotFoundError("Parent not found");
         }
         return kid;
     }
@@ -78,7 +78,7 @@ class PaymentService {
         try {
             // Validate input amount
             if (typeof totalAmount !== "number" || totalAmount <= 0) {
-                throw new Error("Invalid payment amount");
+                throw new BadRequestError("Invalid payment amount");
             }
             // Convert to cents and round to avoid floating point issues
             const amountInCents = Math.round(totalAmount * 100);
@@ -95,11 +95,11 @@ class PaymentService {
             console.error("Stripe PaymentIntent creation failed:", error);
             // Handle specific Stripe errors
             if (error.type === "StripeInvalidRequestError") {
-                throw new Error(`Payment processing error: ${error.message}`);
+                throw new BadRequestError(`Payment processing error: ${error.message}`);
             }
             // Handle rate limiting
             if (error.type === "StripeRateLimitError") {
-                throw new Error("Payment system busy. Please try again shortly.");
+                throw new BadRequestError("Payment system busy. Please try again shortly.");
             }
             // Generic error fallback
             throw new Error("Failed to process payment. Please try again.");
@@ -219,25 +219,30 @@ class PaymentService {
                 // Check if today is the day before the due date
                 if (schedule.nextDueDate.getTime() === tomorrow.getTime()) {
                     // Send 24-hour reminder
-                    await sendNotification(parent.fcmToken, "Payment Reminder", `Reminder: You have unpaid chores. Payment is due tomorrow.`);
-                    // Create a notification in the database
-                    const notification = await new Notification({
-                        parentId: parent._id,
+                    const notification = await Notification.create({
+                        recipient: {
+                            id: parent._id,
+                            role: "Parent",
+                        },
+                        recipientId: parent._id,
                         title: "Payment Reminder",
                         message: `Reminder: You have unpaid chores. Payment is due tomorrow.`
                     });
-                    await notification.save();
+                    await sendNotification(parent.fcmToken, notification.title, notification.message, { notificationId: notification._id });
                 }
                 // Check if today is the due date
                 if (schedule.nextDueDate.getTime() === today.getTime()) {
                     // Send due date notification
-                    await sendNotification(parent.fcmToken, "Payment Due", `Reminder: You have unpaid chores. Payment is due today.`);
-                    const notification = await new Notification({
-                        parentId: parent._id,
+                    const notification = await Notification.create({
+                        recipient: {
+                            id: parent._id,
+                            role: "Parent",
+                        },
+                        recipientId: parent._id,
                         title: "Payment Due",
                         message: `Reminder: You have unpaid chores. Payment is due today.`
                     });
-                    await notification.save();
+                    await sendNotification(parent.fcmToken, notification.title, notification.message, { notificationId: notification._id });
                 }
                 // Check if today is 24 hours after the due date
                 const twentyFourHoursAfterDueDate = new Date(schedule.nextDueDate);
@@ -245,14 +250,17 @@ class PaymentService {
                 if (today.getTime() === twentyFourHoursAfterDueDate.getTime()) {
                     // Restrict parent from creating new chores or expenses
                     await Parent.findByIdAndUpdate(parent._id, { canCreate: false });
-                    // Send restriction notification
-                    await sendNotification(parent.fcmToken, "Payment Overdue", `You have missed the payment deadline. You cannot create new chores or expenses until you complete your overdue payment.`);
-                    const notification = await new Notification({
-                        parentId: parent._id,
+                    const notification = await Notification.create({
+                        recipient: {
+                            id: parent._id,
+                            role: "Parent",
+                        },
+                        recipientId: parent._id,
                         title: "Payment Overdue",
                         message: `You have missed the payment deadline. You cannot create new chores or expenses until you complete your overdue payment.`
                     });
-                    await notification.save();
+                    // Send restriction notification
+                    await sendNotification(parent.fcmToken, notification.title, notification.message, { notificationId: notification._id });
                 }
             }
         }

@@ -1,21 +1,43 @@
-import { ERole } from "../../models/enums.js";
+import { BadRequestError, NotFoundError } from "../../models/errors.js";
 import { Notification } from "./notification.model.js";
 class NotificationService {
-    static async fetchNotifications(userId, role) {
-        if (role?.toLowerCase() == ERole.Parent.toLowerCase()) {
-            return await Notification.find({ parentId: userId }).sort({ createdAt: -1 });
+    static async fetchNotifications(userId) {
+        try {
+            const notifications = await Notification.find({ recipientId: userId })
+                .sort({ createdAt: -1 });
+            return notifications;
         }
-        else if (role?.toLowerCase() == ERole.Kid.toLowerCase()) {
-            return await Notification.find({ kidId: userId }).sort({ createdAt: -1 });
+        catch (error) {
+            throw new Error("Error fetching notifications: " + error.message);
         }
     }
-    static async fetchNotificationCount(userId, role) {
-        if (role?.toLowerCase() == ERole.Parent.toLowerCase()) {
-            return await Notification.countDocuments({ parentId: userId });
+    static async fetchNotificationCount(userId) {
+        try {
+            const total = await Notification.countDocuments({ recipientId: userId });
+            const unread = await Notification.countDocuments({ recipientId: userId, read: false });
+            const read = await Notification.countDocuments({ recipientId: userId, read: true });
+            return {
+                total: total,
+                unread: unread,
+                read: read
+            };
         }
-        else if (role?.toLowerCase() == ERole.Kid.toLowerCase()) {
-            return await Notification.countDocuments({ kidId: userId });
+        catch (error) {
+            throw new Error("Error fetching notification count: " + error.message);
         }
+    }
+    static async markNotificationAsRead(notificationId) {
+        const notification = await Notification.findById(notificationId);
+        if (!notification) {
+            throw new NotFoundError("Notification not found");
+        }
+        if (notification.read) {
+            throw new BadRequestError("Notification already read");
+        }
+        notification.read = true;
+        notification.readAt = new Date();
+        await notification.save();
+        return notification;
     }
 }
 export default NotificationService;

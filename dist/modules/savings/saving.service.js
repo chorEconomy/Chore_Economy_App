@@ -142,8 +142,7 @@ class SavingService {
         }
     }
     static async getSavingsHistory(kidId, savingId) {
-        console.log(savingId)
-         const saving = await Saving.findOne({kidId: kidId, _id: savingId});
+        const saving = await Saving.findOne({ kidId: kidId, _id: savingId });
         if (!saving)
             throw new NotFoundError("Saving goal not found");
         return saving.payments.map((payment) => ({
@@ -183,13 +182,16 @@ class SavingService {
                     saving.startDate;
                 if (SavingUtils.shouldSendReminder(today, lastPaymentDate, saving.schedule)) {
                     if (saving.kidId.fcmToken) {
-                        await sendNotification(saving.kidId.fcmToken, "Savings Reminder", `Time to make your ${saving.schedule} payment for: ${saving.title}`);
-                        const notification = await new Notification({
-                            kidId: saving.kidId._id,
+                        const notification = await Notification.create({
+                            recipient: {
+                                id: saving.kidId._id,
+                                role: "Kid"
+                            },
+                            recipientId: saving.kidId._id,
                             title: "Savings Reminder",
                             message: `Time to make your ${saving.schedule} payment for: ${saving.title}`
                         });
-                        await notification.save();
+                        await sendNotification(saving.kidId.fcmToken, notification.title, notification.message, { notificationId: notification._id });
                     }
                     // Update nextDueDate to the new calculated due date
                     saving.nextDueDate = SavingUtils.calculateNextDueDate(lastPaymentDate, saving.schedule);
@@ -212,6 +214,8 @@ class SavingService {
             throw new ForbiddenError("You can't withdraw an uncompleted saving");
         }
         const wallet = await WalletService.deductSavingsFromWallet(kid, saving.totalSavingAmount, "Withdraw completed savings", ETransactionName.SavingsWithdrawal);
+        // delete the saving goal to prevent a kid from withdrawing twice
+        await Saving.findByIdAndDelete(savingId);
         return wallet;
     }
 }

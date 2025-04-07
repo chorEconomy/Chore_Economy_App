@@ -4,8 +4,7 @@ import paginate from "../../utils/paginate.js";
 import WalletService from "../wallets/wallet.service.js";
 import { ForbiddenError, NotFoundError } from "../../models/errors.js";
 import { Wallet } from "../wallets/wallet.model.js";
-import mongoose from "mongoose";
-import sendNotification from "../../utils/notifications.js";
+import mongoose from "mongoose"; 
 
 class ExpenseService {
   static async createExpense(parent: any, body: any) {  

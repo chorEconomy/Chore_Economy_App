@@ -12,14 +12,18 @@ class ChoreController {
         if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
         }
+        const notification = await new Notification({
+            recipient: {
+                id: parent._id,
+                role: "Parent",
+            },
+            recipientId: parent._id,
+            title: "Payment Overdue",
+            message: `You cannot create new chores until you complete your overdue payment.`
+        });
+        await notification.save();
         if (!parent.canCreate) {
-            await sendNotification(parent.fcmToken, "Payment Overdue", `You cannot create new chores until you complete your overdue payment.`);
-            const notification = await new Notification({
-                parentId: parent._id,
-                title: "Payment Overdue",
-                message: `You cannot create new chores until you complete your overdue payment.`
-            });
-            await notification.save();
+            await sendNotification(parent.fcmToken, notification.title, notification.message, { notificationId: notification._id });
             throw new ForbiddenError("You cannot create new chores until you complete your overdue payment.");
         }
         if (!req.body) {
