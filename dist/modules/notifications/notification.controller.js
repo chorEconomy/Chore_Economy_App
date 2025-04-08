@@ -1,8 +1,8 @@
 import asyncHandler from "express-async-handler";
-import NotificationService from "./notification.service.js";
-import { status_codes } from "../../utils/status_constants.js";
-import { BadRequestError, UnauthorizedError } from "../../models/errors.js";
-import { findUserAndRoleById } from "../../utils/check_user_exists.utils.js";
+import NotificationService from "./notification.service";
+import { status_codes } from "../../utils/status_constants";
+import { BadRequestError, UnauthorizedError } from "../../models/errors";
+import { findUserAndRoleById } from "../../utils/check_user_exists.utils";
 class NotificationController {
     static FecthNotifications = asyncHandler(async (req, res) => {
         const { role, user } = await findUserAndRoleById(req.user);

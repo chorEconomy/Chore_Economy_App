@@ -8,9 +8,15 @@ import savingsRouter from "./modules/savings/saving.routes.js";
 import walletRouter from "./modules/wallets/wallet.routes.js";
 import notificationRouter from "./modules/notifications/notification.routes.js";
 import { globalErrorHandler } from "./middlewares/global-error-middleware.js";
-// import cors from "cors"
+import cors from "cors";
 const app = express();
 //==================MIDDLEWARES=================
+// Configure CORS to accept requests from any domain
+app.use(cors({
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], // Allowed methods
+    allowedHeaders: ["Content-Type", "Authorization"] // Allowed headers
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 //====== routes for application========//

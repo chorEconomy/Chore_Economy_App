@@ -49,7 +49,6 @@ const adminSchema = new Schema({
     fullName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    fcmToken: { type: String, default: null },
     verificationToken: String,
     verificationTokenExpiresAt: Date,
     role: { type: String, enum: Object.values(ERole), default: ERole.Admin },

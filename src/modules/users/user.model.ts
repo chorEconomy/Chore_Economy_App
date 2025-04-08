@@ -45,7 +45,6 @@ interface IAdmin extends Document {
   role: ERole,
   verificationToken: string
   verificationTokenExpiresAt: Date
-  fcmToken: string
 }
 
 const parentSchema: Schema = new Schema<IParent>(
@@ -106,7 +105,6 @@ const adminSchema = new Schema<IAdmin>({
   fullName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  fcmToken: { type: String, default: null },
   verificationToken: String,
   verificationTokenExpiresAt: Date,
   role: { type: String, enum: Object.values(ERole), default: ERole.Admin },
