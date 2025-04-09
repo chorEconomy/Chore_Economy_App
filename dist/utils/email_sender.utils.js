@@ -144,3 +144,7 @@ export const sendResetPasswordEmail = async (name, email, verificationToken) => 
         throw new Error(`Error sending reset password email: ${error}`);
     }
 };
+export const sendResetEmail = async (user, otp) => {
+    const name = await user.firstName || user.fullName;
+    sendResetPasswordEmail(name, user.email, otp);
+};

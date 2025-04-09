@@ -15,6 +15,7 @@ const parentSchema = new Schema({
     canCreate: { type: Boolean, default: true },
     verificationToken: String,
     verificationTokenExpiresAt: Date,
+    lastOtpRequest: Date,
     lastLogin: { type: Date, default: Date.now },
     role: { type: String, enum: Object.values(ERole), default: ERole.Parent },
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
@@ -51,6 +52,7 @@ const adminSchema = new Schema({
     password: { type: String, required: true },
     verificationToken: String,
     verificationTokenExpiresAt: Date,
+    lastOtpRequest: Date,
     role: { type: String, enum: Object.values(ERole), default: ERole.Admin },
 }, { timestamps: true });
 adminSchema.pre("save", async function (next) {

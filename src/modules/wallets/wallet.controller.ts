@@ -15,6 +15,7 @@ class WalletController {
 
         const
             kid = await Kid.findById(req.user);
+        
         if (!kid) {
             throw new UnauthorizedError("Unauthorized access");
         }

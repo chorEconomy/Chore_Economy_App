@@ -10,9 +10,10 @@ import authorizeAdmin from "../../middlewares/authentication/adminRoleWare.js";
 
 
 authRouter.post("/signup/parent", upload.single("profile-image"), validateSignUpInputForParent, UserController.registerParent)
-authRouter.post("/verify-email", UserController.verifyEmail)
+authRouter.post("/verify-registration", UserController.verifyRegistration)
+authRouter.post("/verify-password-reset", UserController.verifyPasswordReset)
 authRouter.post("/logout", authenticateUser, UserController.logout)
-authRouter.post("/login", UserController.login) 
+authRouter.post("/login", UserController.parentLogin) 
 authRouter.post("/refresh-token", UserController.refreshToken)
 authRouter.post("/forgot-password", UserController.forgotPassword)
 authRouter.post("/resend-otp", otpLimiter, UserController.resendOTP)

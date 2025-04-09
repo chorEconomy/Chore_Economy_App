@@ -282,8 +282,7 @@ class PaymentService {
    
     if (!wallet) throw new NotFoundError("Wallet not found");
 
-    const updatedWallet = await WalletService.deductFundsFromWallet(Kid, wallet.balance, "Withdrawal from wallet", ETransactionName.Withdrawal);
-
+    const updatedWallet = await WalletService.deductFundsFromWallet(kid._id, wallet._id, wallet.mainBalance, "Withdrawal from wallet", ETransactionName.Withdrawal);
     
 
     return updatedWallet;

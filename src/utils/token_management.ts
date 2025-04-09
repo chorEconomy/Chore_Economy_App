@@ -19,8 +19,7 @@ async function storeRefreshToken(userId: string, refreshToken: string) {
 
 
 
-async function generateTokens(user: any) {
-    // Generate access and refresh tokens 
+async function generateTokens(user: any) { 
     const ACCESS_SECRET = process.env.ACCESS_SECRET;
     const REFRESH_SECRET = process.env.REFRESH_SECRET;
 

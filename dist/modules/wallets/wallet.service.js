@@ -28,9 +28,9 @@ class WalletService {
         await transaction.save(options);
         return wallet;
     }
-    static async deductFundsFromWallet(kid, amount, description, transactionName, session) {
+    static async deductFundsFromWallet(kidId, walletId, amount, description, transactionName, session) {
         const options = session ? { session } : {};
-        let wallet = await Wallet.findOne({ kid: kid._id }, null, options);
+        let wallet = await Wallet.findOne({ _id: walletId }, null, options);
         if (!wallet) {
             throw new NotFoundError("Wallet not found");
         }
@@ -40,8 +40,9 @@ class WalletService {
         wallet.mainBalance -= amount;
         wallet.balance = 0;
         await wallet.save(options);
+        console.log("kidId", kidId)
         const transaction = new LedgerTransaction({
-            kid: kid._id,
+            kid: kidId,
             wallet: wallet._id,
             transactionType: ETransactionType.Debit,
             transactionName,

@@ -18,6 +18,7 @@ export interface IParent extends Document {
   country: string;
   status: EStatus;
   verificationToken: string
+  lastOtpRequest: Date
   verificationTokenExpiresAt: Date
   lastLogin: Date
   createdAt: Date;
@@ -45,6 +46,7 @@ interface IAdmin extends Document {
   role: ERole,
   verificationToken: string
   verificationTokenExpiresAt: Date
+  lastOtpRequest: Date
 }
 
 const parentSchema: Schema = new Schema<IParent>(
@@ -62,6 +64,7 @@ const parentSchema: Schema = new Schema<IParent>(
     canCreate: { type: Boolean, default: true },
     verificationToken: String,
     verificationTokenExpiresAt: Date,
+    lastOtpRequest: Date,
     lastLogin: {type: Date, default: Date.now},
     role: { type: String, enum: Object.values(ERole),  default: ERole.Parent },
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },
@@ -107,6 +110,7 @@ const adminSchema = new Schema<IAdmin>({
   password: { type: String, required: true },
   verificationToken: String,
   verificationTokenExpiresAt: Date,
+  lastOtpRequest: Date,
   role: { type: String, enum: Object.values(ERole), default: ERole.Admin },
 },
   { timestamps: true }

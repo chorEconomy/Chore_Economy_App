@@ -4,13 +4,14 @@ import {
   getUserByEmailAndRole,
 } from "../../utils/check_user_exists.utils.js";
 import { Response, Request } from "express";
-import generateOTP from "../../utils/otp.utils.js";
+import {generateOTP, generateResetOtp, checkOtpRateLimit} from "../../utils/otp.utils.js";
 import { OTPInput, RegisterInputForParent } from "./user.types.js";
 import { Admin, Kid, Parent } from "./user.model.js";
 import {
   sendResetPasswordEmail,
   sendVerificationEmail,
   sendWelcomeEmail,
+  sendResetEmail
 } from "../../utils/email_sender.utils.js";
 import { EGender, ERole, EStatus } from "../../models/enums.js";
 import { status_codes } from "../../utils/status_constants.js";
@@ -25,37 +26,36 @@ import sendNotification from "../../utils/notifications.js";
 import bcrypt from "bcrypt";
 import CustomRequest from "../../models/CustomRequest.js";
 import { SavingsWallet, Wallet } from "../wallets/wallet.model.js";
-import { BadRequestError } from "../../models/errors.js";
+import { BadRequestError, NotFoundError, UnauthorizedError, UnprocessableEntityError } from "../../models/errors.js";
 import paginate from "../../utils/paginate.js";
+const OTP_EXPIRY_MINUTES = parseInt(process.env.OTP_EXPIRY_MINUTES || '5');
+
 
 export class AuthService {
-  static async register(
-    reqBody: RegisterInputForParent,
+
+  static async registerParent(
+    registerData: RegisterInputForParent,
     imageUrl: string | null
   ) {
-    const {
-      first_name,
-      last_name,
-      email,
-      password,
-      gender,
-      country,
-      phone_number,
-    } = reqBody;
+    const existingParent = await Parent.findOne({ email: registerData.email });
+
+    if (existingParent) {
+      throw new Error('Parent with this email already exists');
+    }
 
     const verificationToken = generateOTP();
 
     const newParent = new Parent({
-      firstName: first_name,
-      lastName: last_name,
-      fullName: `${first_name} ${last_name}`,
-      email,
-      country,
-      password,
-      gender: gender?.toLowerCase() as EGender,
+      firstName: registerData.first_name,
+      lastName: registerData.last_name,
+      fullName: `${registerData.first_name} ${registerData.last_name}`,
+      email: registerData.email,
+      country: registerData.country,
+      password: registerData.password,
+      gender: registerData.gender?.toLowerCase() as EGender,
       verificationToken,
-      verificationTokenExpiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes expiration
-      phoneNumber: phone_number,
+      verificationTokenExpiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
+      phoneNumber: registerData.phone_number,
       role: ERole.Parent,
       photo: imageUrl,
       emailVerified: false,
@@ -63,7 +63,7 @@ export class AuthService {
 
     await newParent.save();
 
-    await sendVerificationEmail(
+    sendVerificationEmail(
       newParent.email,
       newParent.firstName,
       verificationToken
@@ -72,551 +72,253 @@ export class AuthService {
     return newParent;
   }
 
-  static async RegisterParent(req: CustomRequest, res: Response) {
+  static async verifyRegistrationOTP(email: string, otp: string) {
+    const parent: any = await Parent.findOne({
+      email,
+      verificationToken: otp,
+      verificationTokenExpiresAt: { $gt: Date.now() },
+    });
+
+    if (!parent) {
+      throw new BadRequestError("Invalid or expired OTP");
+    }
+
+    const isFirstTimeVerification = !parent.isVerified;
+    parent.isVerified = true;
+    parent.status = EStatus.Active;
+    parent.verificationToken = undefined;
+    parent.verificationTokenExpiresAt = undefined;
+
+    await parent.save();
+
+    if (isFirstTimeVerification) {
+      await sendWelcomeEmail(parent.firstName, parent.email);
+    }
+
+    return parent;
+  }
+  
+  static async verifyPasswordResetOTP(
+    email: string, 
+    otp: string, 
+    userType: 'parent' | 'admin'
+  ) {
+    const Model: any = userType === 'parent' ? Parent : Admin;
+    
+    const user = await Model.findOne({
+      email,
+      verificationToken: otp,
+      verificationTokenExpiresAt: { $gt: Date.now() },
+    });
+
+    console.log("otp user", user)
+    if (!user) {
+      throw new BadRequestError("Invalid or expired OTP");
+    }
+
+    user.verificationToken = undefined;
+    user.verificationTokenExpiresAt = undefined;
+    await user.save();
+
+    return user;
+  }
+  static async resetPassword(email: string, newPassword: string,  userType: 'parent' | 'admin') {
+    if (!email || !newPassword) {
+      throw new BadRequestError('Email and new password are required');
+    }
+
+    const Model: any = userType === 'parent' ? Parent : Admin;
+    const user = await Model.findOne({ email: email });
+    
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Hash and update password
+    user.password = newPassword
+    
+    // Clear any existing verification tokens
+    user.verificationToken = undefined;
+    user.verificationTokenExpiresAt = undefined;
+
+    await user.save();
+
+    return { success: true };
+  }
+  static async refreshToken(refreshToken: string) {
+    if (!refreshToken) {
+      throw new BadRequestError('Refresh token is required');
+    }
     try {
-      if (!req.body) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
-          success: false,
-          message: "Unprocessable request body",
-        });
-      }
-
-      // Check if user already exists
-      const parentAlreadyExists = await Parent.findOne({email: req.body.email})
-      if (parentAlreadyExists) {
-        return res.status(status_codes.HTTP_409_CONFLICT).json({
-          status: 409,
-          success: false,
-          message: "Parent with this email already exists!",
-        });
-      }
-
-      // Determine profile image source
-      let imageUrl: string | null = null;
-
-      if (req.body.photo) {
-        // Parent selected an avatar from predefined options
-        imageUrl = req.body.photo;
-      } else if (req.file) {
-        // Parent uploaded a photo (from gallery or camera)
-        const result = await uploadSingleFile(req.file);
-        imageUrl = result?.secure_url || null;
-      }
-      // Register the user with the selected or uploaded image URL
-      const user = await AuthService.register(req.body, imageUrl);
-
-      return res.status(status_codes.HTTP_201_CREATED).json({
-        status: 201,
-        success: true,
-        message: "Parent created successfully",
-        data: {
-          ...user.toObject(),
-          password: undefined, // Exclude password from response
-        },
-      });
+      return await verifyRefreshTokenAndIssueNewAccessToken(refreshToken);
     } catch (error: any) {
-      console.error("Error in RegisterParent:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "Internal server error",
-        error: error?.message,
-      });
+      throw new Error('Internal server error during token refresh');
     }
   }
 
-  static async verifyEmail(otp: OTPInput) {
-    try {
-      const user: any = await Parent.findOne({
-        verificationToken: otp,
-        verificationTokenExpiresAt: { $gt: Date.now() },
-      });
-
-      if (!user) {
-        return "Invalid or expired OTP";
-      }
-
-      const isFirstTimeVerification = !user.isVerified; // Check if email was not verified before
-
-      user.isVerified = true;
-      user.status = EStatus.Active;
-      user.verificationToken = undefined;
-      user.verificationTokenExpiresAt = undefined;
-
-      await user.save();
-
-      if (isFirstTimeVerification) {
-        await sendWelcomeEmail(user.firstName, user.email);
-      }
-
-      return;
-    } catch (error: any) {
-      throw new Error(
-        error.message || "An error occurred during email verification"
-      );
+  static async resendOTP(email: string) {
+    if (!email) {
+      throw new Error('Email is required');
     }
+ 
+    const user:any = await check_if_user_exist_with_email(email);
+    if (!user) {
+      throw new Error('User with this email not found');
+    }
+
+    const verificationToken = generateOTP();
+    const verificationTokenExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+    user.verificationToken = verificationToken;
+    user.verificationTokenExpiresAt = verificationTokenExpiresAt;
+    await user.save();
+
+    sendVerificationEmail(
+      user.email,
+      user.firstName || user.fullName || 'User',
+      verificationToken
+    );
+
+    return { email };
   }
 
-  static async VerifyEmail(req: Request, res: Response) {
-    try {
-      if (!req.body) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
-          success: false,
-          message: "Unprocessable request body",
-        });
-      }
-
-      if (!req.body.otp) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
-          success: false,
-          message: "OTP is required!",
-        });
-      }
-
-      const response = await AuthService.verifyEmail(req?.body?.otp);
-      if (response) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
-          success: false,
-          message: response,
-        });
-      }
-
-      // Retrieve the user based on the OTP verification
-      const user = await check_if_user_exist_with_email(req.body.email);
-      if (!user) {
-        return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
-          status: 400,
-          success: false,
-          message: "Parent not found!",
-        });
-      }
-
-      // Mark the user as verified
-      user.isVerified = true;
-      await user.save();
-
-      // Use the helper function to generate and store tokens
-      const { access_token, refresh_token } = await generateTokens(user);
-
-      return res.status(status_codes.HTTP_200_OK).json({
-        status: 200,
-        success: true,
-        message: "Email verified successfully! Parent logged in.",
-        access_token,
-        refresh_token,
-        user: { ...user.toObject(), password: undefined },
-      });
-    } catch (error: any) {
-      console.error("Verify Email error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: error?.message,
-      });
+  static async loginParent(
+    email: string,
+    password: string,
+    fcmToken?: string,
+    role: ERole = ERole.Parent
+  ) {
+    // Input validation
+    if (!email || !password) {
+      throw new UnprocessableEntityError('Email and password are required');
     }
-  }
 
-  static async RefreshToken(req: Request, res: Response) {
-    try {
-      const { refresh_token } = req.body;
-
-      if (!refresh_token) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
-          message: "Refresh token is required",
-        });
-      }
-
-      try {
-        const { newAccessToken, newRefreshToken } =
-          await verifyRefreshTokenAndIssueNewAccessToken(refresh_token);
-
-        return res.status(status_codes.HTTP_200_OK).json({
-          status: 200,
-          access_token: newAccessToken,
-          refresh_token: newRefreshToken,
-        });
-      } catch (error: any) {
-        if (
-          error instanceof Error &&
-          error.message === "Invalid or expired refresh token"
-        ) {
-          return res.status(status_codes.HTTP_403_FORBIDDEN).json({
-            status: 403,
-            message: "Invalid or expired refresh token",
-          });
-        }
-        console.error("Refresh token verification error:", error);
-        return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-          status: 500,
-          message: "Internal Server Error",
-        });
-      }
-    } catch (error) {
-      console.error("Unexpected error in refreshToken:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        message: "Internal Server Error",
-      });
+    // Find parent with role validation
+    const parent: any = await Parent.findOne({ email, role });
+    if (!parent) {
+      throw new BadRequestError('Invalid credentials');
     }
-  }
 
-  static async ResendOTP(req: Request, res: Response) {
-    try {
-      const { email } = req.body;
-      if (!email) {
-        return res
-          .status(status_codes.HTTP_400_BAD_REQUEST)
-          .json({ status: 400, message: "Email is required" });
-      }
-
-      const user = await check_if_user_exist_with_email(email);
-
-      if (!user) {
-        return res
-          .status(status_codes.HTTP_404_NOT_FOUND)
-          .json({ status: 404, message: "Parent with this email not found!" });
-      }
-
-      const verificationToken = generateOTP();
-
-      user.verificationToken = verificationToken;
-      user.verificationTokenExpiresAt = Date.now() + 5 * 60 * 1000;
-
-      await user.save();
-
-      await sendVerificationEmail(
-        user.email,
-        user.firstName,
-        verificationToken
-      );
-
-      return res.status(status_codes.HTTP_200_OK).json({
-        status: 200,
-        success: true,
-        message: "OTP resent successfully.",
-      });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({ status: 500, message: "Internal Server Error" });
+    // Password verification
+    const isPasswordValid = await comparePassword(password, parent.password);
+    if (!isPasswordValid) {
+      throw new BadRequestError('Invalid credentials');
     }
-  }
 
-  static async Login(req: Request, res: Response) {
-    try {
-      if (!req.body) {
-        return res.status(422).json({
-          success: false,
-          message: "Unprocessable request body",
-        });
-      }
-
-      const role = req.query.role as string;
-      if (!role) {
-        return res.status(400).json({
-          success: false,
-          message: "Please provide a valid user's role",
-        });
-      }
-
-      const parent: any = await Parent.findOne({ email: req.body.email, role: role})
-
-      if (!parent) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid credentials!",
-        });
-      }
-
-      const isPasswordValid = await comparePassword(
-        req.body.password,
-        parent.password
-      );
-      if (!isPasswordValid) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid credentials!",
-        });
-      }
-
-      // **Ensure only one login per device**
-      if (parent.fcmToken) {
-        parent.fcmToken = null; // Remove old FCM token
-        await parent.save();
-      }
-
-      // **Generate new tokens**
-      const { access_token, refresh_token } = await generateTokens(parent);
-
-      parent.fcmToken = req.body.fcmToken;
+    // Device management (single device login)
+    if (parent.fcmToken) {
+      parent.fcmToken = null;
       await parent.save();
-
-      return res.status(200).json({
-        success: true,
-        access_token,
-        refresh_token,
-        parent: { ...parent.toObject(), password: undefined },
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "An error occurred during login",
-      });
     }
+
+    // Token generation
+    const tokens = await generateTokens(parent);
+
+    // Update FCM token if provided
+    if (fcmToken) {
+      parent.fcmToken = fcmToken;
+      await parent.save();
+    }
+
+    return {
+      tokens,
+      parent: { ...parent.toObject(), password: undefined }
+    };
   }
 
-  static async Logout(req: Request, res: Response) {
-    try {
-      const user = await check_if_user_exists(req.user);
-      if (!user) {
-        return res
-          .status(status_codes.HTTP_401_UNAUTHORIZED)
-          .json({ status: 401, message: "Unauthorized access" });
-      }
-
-      const { refresh_token } = req.body;
-
-      if (!refresh_token) {
-        return res
-          .status(400)
-          .json({ status: 400, message: "Refresh token is required" });
-      }
-
-      const deletedToken = await RefreshToken.findOneAndDelete({
-        refreshToken: refresh_token,
-      });
-
-      if (!deletedToken) {
-        return res
-          .status(404)
-          .json({ status: 404, message: "Refresh token not found" });
-      }
-
-      user.fcmToken = null;
-
-      await user.save();
-
-      return res
-        .status(200)
-        .json({ status: 200, message: "Logged out successfully" });
-    } catch (error) {
-      console.error("Logout error:", error);
-      return res
-        .status(500)
-        .json({ status: 500, message: "Internal Server Error" });
+static async logout(userId: string, refreshToken: string) {
+    // Validate inputs
+    if (!refreshToken) {
+      throw new BadRequestError('Refresh token is required');
     }
+
+    // Verify user exists
+    const user = await check_if_user_exists(userId);
+  
+    if (!user) {
+      throw new UnauthorizedError('Unauthorized access');
+    }
+
+    // Delete refresh token
+    const deletedToken = await RefreshToken.findOneAndDelete({
+      refreshToken: refreshToken
+    });
+
+    if (!deletedToken) {
+      throw new Error('Refresh token not found');
+    }
+
+    // Clear FCM token
+    user.fcmToken = null;
+    await user.save();
+
+    return { success: true };
   }
 
-  static async ForgotPassword(req: Request, res: Response) {
-    try {
-      if (!req.body?.email) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
-          success: false,
-          message: "Email is required",
-        });
-      }
+  static async initiatePasswordReset(email: string) {
 
-      const { email } = req.body;
-      const user = await check_if_user_exist_with_email(email);
+      const user: any = await check_if_user_exist_with_email(email);
 
-      if (!user) {
-        return res.status(status_codes.HTTP_404_NOT_FOUND).json({
-          status: 404,
-          success: false,
-          message: "Parent or admin not found",
-        });
-      }
+      if (!user) throw new Error('Account not found with this email');
 
-      // Prevent multiple OTP requests within a short time
-      if (
-        user.verificationTokenExpiresAt &&
-        user.verificationTokenExpiresAt > Date.now()
-      ) {
-        return res.status(status_codes.HTTP_429_TOO_MANY_REQUESTS).json({
-          status: 429,
-          success: false,
-          message: "OTP already sent. Please wait before requesting again.",
-        });
-      }
-
-      // Generate OTP
-      const otp = generateOTP();
+      checkOtpRateLimit(user);
+ 
+      const { otp, expiresAt } = generateResetOtp();
+      
       user.verificationToken = otp;
-      user.verificationTokenExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes expiration
-
+      user.verificationTokenExpiresAt = expiresAt;
+      user.lastOtpRequest = new Date();
       await user.save();
-      sendResetPasswordEmail(user.firstName, user.email, otp);
-      // if (user.role == ERole.Parent) {
-      //   await user.save();
-      //   sendResetPasswordEmail(user.firstName, user.email, otp);
-      // }
-     
-    //  else if (user.role == ERole.Admin) {
-    //     await user.save();
-    //     sendResetPasswordEmail(user.fullName, user.email, otp);
-    //   }
 
+      sendResetEmail(user, otp);
 
-       res.status(status_codes.HTTP_200_OK).json({
-        success: true,
-        status: 200,
-        message: "Password reset OTP sent to your email.",
-       });
-       return
-    } catch (error) {
-      console.error("Forgot password error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "Internal Server Error",
-      });
-    }
+      return { 
+        email,
+        expiresInMinutes: OTP_EXPIRY_MINUTES 
+      };
   }
 
-  // static async forgotPasswordForAdmin(email: string) {
-  //   try {
-  //     if (!email) {
-  //       throw new BadRequestError("Email is required");
-  //     }
-  //     const user = await check_if_user_exist_with_email(email);
 
-  //     if (!user) {
-  //       throw new NotFoundError("User not found");
-  //     }
 
-  //     // Generate OTP
-  //     const otp = generateOTP();
-  //     user.verificationToken = otp;
-  //     user.verificationTokenExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes expiration
 
-  //     await user.save();
-
-  //     await sendResetPasswordEmail(user.firstName, user.email, otp);
-
-  //     return "Password reset OTP sent to your email.";
-  //   } catch (error: any) {
-  //     throw new Error(error.message || "An error occurred during password reset");
-  //   }
-  // }
-
-  static async ResetPassword(req: Request, res: Response) {
-    try {
-      if (!req.body?.email || !req.body?.password) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
-          success: false,
-          message: "Email and new password are required",
-        });
-      }
-
-      const { email, password } = req.body;
-
-      // Find user by email
-      const user: any = await Parent.findOne({ email });
-
-      if (!user) {
-        return res.status(status_codes.HTTP_404_NOT_FOUND).json({
-          status: 404,
-          success: false,
-          message: "Parent not found",
-        });
-      }
-      console.log(user.password);
-
-      user.password = password;
-
-      await user.save();
-      console.log(user.password);
-
-      return res.status(status_codes.HTTP_200_OK).json({
-        status: 200,
-        success: true,
-        message: "Password reset successful",
-      });
-    } catch (error: any) {
-      console.error("Password reset error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "Internal Server Error",
-        error: error?.message,
-      });
+  static async editProfile(
+    parentId: string,
+    updateData: {
+      first_name?: string;
+      last_name?: string;
+      phone_number?: string;
+      country?: string;
+      gender?: EGender;
+    },
+    file?: Express.Multer.File
+  ) {
+    // Find existing parent
+    const existingParent = await Parent.findById(parentId);
+    if (!existingParent) {
+      throw new Error(`Parent with the id: ${parentId} not found`);
     }
-  }
 
-  static async EditProfile(req: Request, res: Response) {
-    try {
-      if (Object.keys(req.body).length === 0 && !req.file) {
-        return res.status(status_codes.HTTP_422_UNPROCESSABLE_ENTITY).json({
-          status: 422,
-          success: false,
-          message: "No data provided for update",
-        });
-      }
-
-      if (!req.user) {
-        return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
-          status: 401,
-          success: false,
-          message: "Unauthorized access",
-        });
-      }
-
-      const parentId = req.user;
-
-      const existingParent = await Parent.findById(parentId);
-
-      if (!existingParent) {
-        return res.status(status_codes.HTTP_404_NOT_FOUND).json({
-          status: 404,
-          success: false,
-          message: `Parent with the id: ${parentId} not found`,
-        });
-      }
-
-      const { first_name, last_name, phone_number, country, gender } = req.body;
-
-      // Upload image if provided
-      let imageUrl: string | null = "";
-      if (req.file) {
-        const result = await uploadSingleFile(req.file);
-        imageUrl = result?.secure_url || existingParent.photo;
-      }
-
-      existingParent.firstName = first_name ?? existingParent.firstName;
-      existingParent.lastName = last_name ?? existingParent.lastName;
-      existingParent.photo = imageUrl;
-      existingParent.phoneNumber = phone_number ?? existingParent.phoneNumber;
-      existingParent.gender = gender ?? existingParent.gender;
-      existingParent.country = country ?? existingParent.country;
-
-      await existingParent.save();
-
-      return res.status(status_codes.HTTP_200_OK).json({
-        status: 200,
-        success: true,
-        message: "Profile updated successfully",
-        data: {
-          ...existingParent.toObject(),
-          password: undefined,
-        },
-      });
-    } catch (error: any) {
-      console.error("Password reset error:", error);
-      return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-        status: 500,
-        success: false,
-        message: "Internal Server Error",
-        error: error?.message,
-      });
+    // Handle file upload if provided
+    let imageUrl: string | null = "";
+    if (file) {
+      const result = await uploadSingleFile(file);
+      imageUrl = result?.secure_url || existingParent.photo;
     }
+
+    // Update parent data
+    existingParent.firstName = updateData.first_name ?? existingParent.firstName;
+    existingParent.lastName = updateData.last_name ?? existingParent.lastName;
+    existingParent.photo = imageUrl;
+    existingParent.phoneNumber = updateData.phone_number ?? existingParent.phoneNumber;
+    existingParent.gender = updateData.gender ?? existingParent.gender;
+    existingParent.country = updateData.country ?? existingParent.country;
+
+    await existingParent.save();
+
+    return {
+      ...existingParent.toObject(),
+      password: undefined
+    };
   }
 
   static async CreateKidProfile(req: Request, res: Response) {
@@ -1041,12 +743,14 @@ export class AuthService {
   }
 
   static async LoginAdmin(email: string, password: string, fcmToken: string) {
-    const admin: any = await Admin.findOne({email: email})
+    const admin: any = await Admin.findOne({ email: email })
+    
     if (!admin) {
       throw new BadRequestError("Invalid credentials!");
     }
 
     const isPasswordValid = await comparePassword(password, admin.password);
+
     if (!isPasswordValid) {
       throw new BadRequestError("Invalid credentials!");
     }
