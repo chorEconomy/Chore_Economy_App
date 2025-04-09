@@ -80,8 +80,6 @@ class UserController {
             missingFields.push('email');
         if (!password)
             missingFields.push('password');
-        if (!fcmToken)
-            missingFields.push('fcmToken');
         if (missingFields.length > 0) {
             throw new BadRequestError(`Missing required fields: ${missingFields.join(', ')}`);
         }

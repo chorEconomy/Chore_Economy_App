@@ -1,7 +1,7 @@
 import asyncHandler from "express-async-handler";
 import NotificationService from "./notification.service.js";
 import { status_codes } from "../../utils/status_constants.js";
-import { BadRequestError, UnauthorizedError } from "../../models/errors.js";
+import { UnauthorizedError } from "../../models/errors.js";
 import { findUserAndRoleById } from "../../utils/check_user_exists.utils.js";
 class NotificationController {
     static FecthNotifications = asyncHandler(async (req, res) => {
@@ -30,12 +30,12 @@ class NotificationController {
         });
         return;
     });
-    static MarkNotificationAsRead = asyncHandler(async (req, res) => {
-        const { id } = req.params;
-        if (!id) {
-            throw new BadRequestError("Notification Id is required!");
+    static MarkNotificationsAsRead = asyncHandler(async (req, res) => {
+        const { role, user } = await findUserAndRoleById(req.user);
+        if (!user) {
+            throw new UnauthorizedError("Unauthorized access");
         }
-        const notification = await NotificationService.markNotificationAsRead(id);
+        const notification = await NotificationService.markNotificationsAsRead(user._id);
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,

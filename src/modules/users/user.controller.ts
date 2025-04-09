@@ -114,8 +114,7 @@ class UserController {
    
            const missingFields = [];
            if (!email) missingFields.push('email');
-           if (!password) missingFields.push('password');
-           if (!fcmToken) missingFields.push('fcmToken');
+           if (!password) missingFields.push('password'); 
    
            if (missingFields.length > 0) {
                throw new BadRequestError(`Missing required fields: ${missingFields.join(', ')}`);

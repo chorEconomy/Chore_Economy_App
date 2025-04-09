@@ -28,20 +28,28 @@ class NotificationService {
         }
     }
 
-    static async markNotificationAsRead(notificationId: any) { 
-        const notification = await Notification.findById(notificationId);
-        if (!notification) {
-            throw new NotFoundError("Notification not found");
-        } 
-
-        if (notification.read) {
-            throw new BadRequestError("Notification already read");
-        } 
-
-        notification.read = true;
-        notification.readAt = new Date();
-        await notification.save();
-        return notification;
+    static async markNotificationsAsRead(userId: any) { 
+        const notifications = await Notification.find({ recipientId: userId, read: false });
+        
+        if (!notifications || notifications.length === 0) {
+            throw new NotFoundError("No unread notifications found");
+        }
+    
+        // Get all notification IDs
+        const notificationIds = notifications.map(notification => notification._id);
+    
+        // Bulk update all notifications
+        const result = await Notification.updateMany(
+            { _id: { $in: notificationIds } },
+            { 
+                $set: { 
+                    read: true,
+                    readAt: new Date() 
+                } 
+            }
+        );
+    
+        return result;
     }
 }
 

@@ -41,14 +41,16 @@ import { findUserAndRoleById } from "../../utils/check_user_exists.utils";
         return;
     });
      
-     static MarkNotificationAsRead = asyncHandler(async (req: Request, res: Response) => { 
-        const { id } = req.params;
-        
-        if (!id) {
-            throw new BadRequestError("Notification Id is required!");
+     static MarkNotificationsAsRead = asyncHandler(async (req: Request, res: Response) => { 
+       
+        const { role, user } = await findUserAndRoleById(req.user);
+
+        if (!user) {
+            throw new UnauthorizedError("Unauthorized access");
         }
 
-        const notification = await NotificationService.markNotificationAsRead(id);
+
+        const notification = await NotificationService.markNotificationsAsRead(user._id);
 
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,

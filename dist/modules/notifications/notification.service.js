@@ -1,4 +1,4 @@
-import { BadRequestError, NotFoundError } from "../../models/errors.js";
+import { NotFoundError } from "../../models/errors.js";
 import { Notification } from "./notification.model.js";
 class NotificationService {
     static async fetchNotifications(userId) {
@@ -26,18 +26,21 @@ class NotificationService {
             throw new Error("Error fetching notification count: " + error.message);
         }
     }
-    static async markNotificationAsRead(notificationId) {
-        const notification = await Notification.findById(notificationId);
-        if (!notification) {
-            throw new NotFoundError("Notification not found");
+    static async markNotificationsAsRead(userId) {
+        const notifications = await Notification.find({ recipientId: userId, read: false });
+        if (!notifications || notifications.length === 0) {
+            throw new NotFoundError("No unread notifications found");
         }
-        if (notification.read) {
-            throw new BadRequestError("Notification already read");
-        }
-        notification.read = true;
-        notification.readAt = new Date();
-        await notification.save();
-        return notification;
+        // Get all notification IDs
+        const notificationIds = notifications.map(notification => notification._id);
+        // Bulk update all notifications
+        const result = await Notification.updateMany({ _id: { $in: notificationIds } }, {
+            $set: {
+                read: true,
+                readAt: new Date()
+            }
+        });
+        return result;
     }
 }
 export default NotificationService;

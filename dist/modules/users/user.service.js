@@ -880,12 +880,6 @@ export class AuthService {
         if (!isPasswordValid) {
             throw new BadRequestError("Invalid credentials!");
         }
-        if (admin.fcmToken) {
-            admin.fcmToken = null; // Remove old FCM token
-            await admin.save();
-        }
-        admin.fcmToken = fcmToken; // Save new FCM token
-        await admin.save();
         const loggedAdmin = {
             ...admin.toObject(),
             password: undefined,
