@@ -52,7 +52,8 @@ const authorizeAdmin = async (req: Request, res: Response, next: NextFunction) =
         }
 
         // Attach user ID to the request and proceed
-        req.user = payload.sub;
+       req.user = payload.sub;
+       
         next();
 
     } catch (err: any) {

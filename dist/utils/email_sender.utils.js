@@ -1,96 +1,29 @@
-// import { mailtrapClient, sender } from "../config/mailtrap.config.js";
-// import ejs from "ejs"
-// import fs from "fs"
-// import path from "path"
-// export const sendVerificationEmail = async (userEmail: string, name: string, verificationToken: string) => {
-//   const recipient = [ {email: userEmail} ]
-//   try {
-//     const fileName = "verification_email_template.ejs"
-//     const templatePath = path.join(__dirname, '..', 'templates', `${fileName}`)
-//     const template = fs.readFileSync(templatePath, 'utf-8');
-//     const html = ejs.render(template, { name, verificationToken });  
-//     const response = await mailtrapClient
-//       .send({
-//         from: sender,
-//         to: recipient,
-//         subject: "Verify Your Account",
-//         html,
-//         category: "Account Verification",
-//       })
-//     console.log("Account verification email sent successfully", response);
-//   } catch (error) {
-//     console.error(`Error sending verification email`, error)
-//     throw new Error(`Error sending verification email: ${error}`)
-//   }
-// }
-// export const sendWelcomeEmail = async (name: string, email: string) => {
-//  try {
-//   const recipient = [{ email }]
-//   const fileName = "welcome_email_template.ejs"
-//   const templatePath = path.join(__dirname, '..', 'templates', `${fileName}`)
-//   const template = fs.readFileSync(templatePath, 'utf-8');
-//   const html = ejs.render(template, { name });  
-//   const response = await mailtrapClient
-//       .send({
-//         from: sender,
-//         to: recipient,
-//         subject: "Welcome to ChorEconomy Inc.",
-//         html,
-//         category: "Welcome Email",
-//       })
-//     console.log("Welcome email sent successfully", response);
-//  } catch (error) {
-//   console.error(`Error sending welcome email`, error)
-//   throw new Error(`Error sending welcome email: ${error}`)
-//  }
-// }
-// export const sendResetPasswordEmail = async (name: string, email: string, verificationToken: string) => {
-//  try {
-//   const recipient = [{ email }]
-//   const fileName = "reset_password_email_template.ejs"
-//   const templatePath = path.join(__dirname, '..', 'templates', `${fileName}`)
-//   const template = fs.readFileSync(templatePath, 'utf-8');
-//   const html = ejs.render(template, { name, verificationToken });  
-//   const response = await mailtrapClient
-//       .send({
-//         from: sender,
-//         to: recipient,
-//         subject: "Reset your Password",
-//         html,
-//         category: "Password Reset",
-//       })
-//     console.log("Reset password email sent successfully", response);
-//  } catch (error) {
-//   console.error(`Error sending reset password email`, error)
-//   throw new Error(`Error sending reset password email: ${error}`)
-//  }
-// }
-import { mailtrapClient, sender } from "../config/mailtrap.config.js";
+import { Resend } from "resend";
 import ejs from "ejs";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import * as dotenv from "dotenv";
+dotenv.config();
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const resend = new Resend(process.env.RESEND_API_KEY);
+const sender = process.env.SENDER_EMAIL;
 export const sendVerificationEmail = async (userEmail, name, verificationToken) => {
-    const recipient = [{ email: userEmail }];
     try {
         const fileName = "verification_email_template.ejs";
         const templatePath = path.join(__dirname, '..', 'templates', fileName);
         console.log('Looking for template at:', templatePath); // Debug log
         const template = fs.readFileSync(templatePath, 'utf-8');
         const html = ejs.render(template, { name, verificationToken });
-        const response = await mailtrapClient.send({
-            from: sender,
-            to: recipient,
+        await resend.emails.send({
+            from: `${sender}`,
+            to: userEmail,
             subject: "Verify Your Account",
-            html,
-            category: "Account Verification",
+            html: html,
         });
-        console.log("Account verification email sent successfully", response);
-        return response;
     }
     catch (error) {
         console.error(`Error sending verification email`, error);
@@ -100,18 +33,16 @@ export const sendVerificationEmail = async (userEmail, name, verificationToken) 
 // Similar fixes for other email functions...
 export const sendWelcomeEmail = async (name, email) => {
     try {
-        const recipient = [{ email }];
         const fileName = "welcome_email_template.ejs";
         const templatePath = path.join(__dirname, '..', 'templates', fileName);
         console.log('Looking for template at:', templatePath); // Debug log
         const template = fs.readFileSync(templatePath, 'utf-8');
         const html = ejs.render(template, { name });
-        const response = await mailtrapClient.send({
-            from: sender,
-            to: recipient,
-            subject: "Welcome to ChorEconomy Inc.",
-            html,
-            category: "Welcome Email",
+        const response = await resend.emails.send({
+            from: `${sender}`,
+            to: email,
+            subject: "Welcome to Chor",
+            html: html,
         });
         console.log("Welcome email sent successfully", response);
         return response;
@@ -123,18 +54,16 @@ export const sendWelcomeEmail = async (name, email) => {
 };
 export const sendResetPasswordEmail = async (name, email, verificationToken) => {
     try {
-        const recipient = [{ email }];
         const fileName = "reset_password_email_template.ejs";
         const templatePath = path.join(__dirname, '..', 'templates', fileName);
         console.log('Looking for template at:', templatePath); // Debug log
         const template = fs.readFileSync(templatePath, 'utf-8');
         const html = ejs.render(template, { name, verificationToken });
-        const response = await mailtrapClient.send({
-            from: sender,
-            to: recipient,
+        const response = await resend.emails.send({
+            from: `${sender}`,
+            to: email,
             subject: "Reset your Password",
-            html,
-            category: "Password Reset",
+            html: html,
         });
         console.log("Reset password email sent successfully", response);
         return response;

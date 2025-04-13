@@ -40,7 +40,6 @@ class WalletService {
         wallet.mainBalance -= amount;
         wallet.balance = 0;
         await wallet.save(options);
-        console.log("kidId", kidId)
         const transaction = new LedgerTransaction({
             kid: kidId,
             wallet: wallet._id,
