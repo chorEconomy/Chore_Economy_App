@@ -215,9 +215,9 @@ class ChoreService {
         const inProgressPercentage = (inProgress / totalChores) * 100;
         return {
             totalChores: totalChores,
-            unclaimed: unclaimedPercentage,
-            completed: completedPercentage,
-            inProgress: inProgressPercentage,
+            unclaimed: unclaimedPercentage.toFixed(2),
+            completed: completedPercentage.toFixed(2),
+            inProgress: inProgressPercentage.toFixed(2),
         };
     }
     static async fetchChoreDetailsForParent(parentId) {

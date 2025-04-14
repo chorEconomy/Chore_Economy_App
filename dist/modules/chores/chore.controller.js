@@ -163,7 +163,7 @@ class ChoreController {
         });
         return;
     });
-    static fetchChoreStatistics = asyncHandler(async (req, res) => {
+    static fetchChoreStatistics = asyncHandler(async (req, res, next) => {
         const admin = await Admin.findById(req.user);
         if (!admin) {
             throw new UnauthorizedError("Unauthorized access");
@@ -177,7 +177,7 @@ class ChoreController {
         });
         return;
     });
-    static fetchChoresByParentId = asyncHandler(async (req, res) => {
+    static fetchChoresByParentId = asyncHandler(async (req, res, next) => {
         const admin = Admin.findById(req.user);
         if (!admin) {
             throw new UnauthorizedError("Unauthorized access");

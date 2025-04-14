@@ -265,7 +265,7 @@ class ChoreController {
   );
 
   static fetchChoreStatistics = asyncHandler(
-    async (req: Request, res: Response) => {
+    async (req: Request, res: Response, next: NextFunction) => {
       const admin = await Admin.findById(req.user); 
 
       if (!admin) {
@@ -283,7 +283,7 @@ class ChoreController {
       return;
     });
   
-  static fetchChoresByParentId = asyncHandler(async (req: Request, res: Response) => {
+  static fetchChoresByParentId = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const admin = Admin.findById(req.user);
 
     if (!admin) {
