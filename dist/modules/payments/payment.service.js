@@ -41,6 +41,7 @@ class PaymentService {
             kidId: kid._id,
             kidName: kid.name,
             totalAmount, 
+            approvedChores,
             hasApprovedChores: approvedChores.length > 0,
         };
     }
