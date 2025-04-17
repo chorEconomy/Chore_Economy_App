@@ -1,6 +1,6 @@
 import express from "express";
-import NotificationController from "./notification.controller.js";
-import authenticateUser from "../../middlewares/authentication/authware.js";
+import NotificationController from "./notification.controller";
+import authenticateUser from "../../middlewares/authentication/authware";
 const notificationRouter = express.Router();
 notificationRouter.get("", authenticateUser, NotificationController.FecthNotifications);
 notificationRouter.get("/count", authenticateUser, NotificationController.FetchNotificationCount);

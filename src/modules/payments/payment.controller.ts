@@ -77,7 +77,6 @@ class PaymentController {
       if (!kid) {
            throw new UnauthorizedError("Unauthorized access");
      }
-     
       
       const result = await PaymentService.withdrawMoney(kid);
 

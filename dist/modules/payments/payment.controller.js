@@ -27,7 +27,7 @@ class PaymentController {
                 throw new UnauthorizedError("Unauthorized access");
             }
             const { kidId } = req.body;
-            const paymentIntent = await PaymentService.processPayment(kidId, parent._id);
+            const paymentIntent = await PaymentService.processStripePayment(kidId, parent._id);
             res.status(status_codes.HTTP_200_OK).json({
                 status: 200,
                 success: true,
@@ -42,6 +42,18 @@ class PaymentController {
                 message: error.message,
             });
             return;
+        }
+    });
+    static StripeWebhookHandler = asyncHandler(async (req, res) => {
+        const sig = req.headers['stripe-signature'];
+        const rawBody = req.body;
+        try {
+            await PaymentService.handleStripeWebhook(sig, rawBody);
+            res.status(200).json({ received: true });
+        }
+        catch (error) {
+            console.error("Webhook Error:", error.message);
+            res.status(400).send(`Webhook Error: ${error.message}`);
         }
     });
     static WithdrawFromWallet = asyncHandler(async (req, res) => {

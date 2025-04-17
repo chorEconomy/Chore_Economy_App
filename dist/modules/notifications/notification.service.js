@@ -1,5 +1,5 @@
-import { NotFoundError } from "../../models/errors.js";
-import { Notification } from "./notification.model.js";
+import { NotFoundError } from "../../models/errors";
+import { Notification } from "./notification.model";
 class NotificationService {
     static async fetchNotifications(userId) {
         try {
