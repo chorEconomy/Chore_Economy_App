@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
+import express from "express";
 import { Kid, Parent } from "../users/user.model.js";
 import { Chore } from "../chores/chore.model.js";
 
@@ -15,9 +16,13 @@ import sendNotification from "../../utils/notifications.js";
 import mongoose, { ClientSession, ObjectId } from "mongoose";
 import { Wallet } from "../wallets/wallet.model.js";
 import {Notification} from "../notifications/notification.model.js";
+import { check_if_user_exists } from "../../utils/check_user_exists.utils.js";
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
+
+export const stripeWebhook = express.raw({ type: "application/json" })
 
 class PaymentService {
   static async getKidsWithApprovedChores(parentId: ObjectId) {
@@ -48,19 +53,16 @@ class PaymentService {
     );
   }
 
-  static async processPayment(kidId: any, parentId: any) {
-    let session: ClientSession | null = null;
+  static async handleSuccessfulPayment(kidId: any, parentId: any, session: ClientSession) {
 
-    try {
-      session = await mongoose.startSession();
-      session.startTransaction();
+    try { 
 
       const kid = await this.validateKidAndParent(kidId, parentId, session);
 
       const { approvedChores, totalAmount } =
         await this.getApprovedChoresAndTotalAmount(kidId, session);
 
-      const paymentIntent = await this.processStripePayment(totalAmount);
+      // const paymentIntent = await this.processStripePayment(totalAmount, kidId, parentId);
 
       // All database operations within the transaction
       await this.addFundsToWallet(kid, totalAmount, session);
@@ -71,7 +73,7 @@ class PaymentService {
       // Commit the transaction
       await session.commitTransaction();
 
-      return paymentIntent;
+      return
     } catch (error: any) {
       if (session) {
         await session.abortTransaction();
@@ -103,24 +105,29 @@ class PaymentService {
     return kid;
   }
 
-  private static async processStripePayment(totalAmount: number) {
-    try {
-      // Validate input amount
+  static async processStripePayment(kidId: any, parentId: any) {
+    let session: ClientSession | null = null;
+    try { 
+      session = await mongoose.startSession();
+      session.startTransaction();
+      const {approvedChores, totalAmount} = await this.getApprovedChoresAndTotalAmount(kidId, session);
+
       if (typeof totalAmount !== "number" || totalAmount <= 0) {
         throw new BadRequestError("Invalid payment amount");
       }
-
-      // Convert to cents and round to avoid floating point issues
+ 
       const amountInCents = Math.round(totalAmount * 100);
-
-      // Create PaymentIntent with additional recommended parameters
+ 
       const paymentIntent: any = await stripe.paymentIntents.create({
         amount: amountInCents,
         currency: "usd",
+        metadata: { 
+          kidId: kidId.toString(),
+          parentId: parentId.toString()
+        }
       });
-
-      // Log successful creation (remove in production)
-      console.log(`Created PaymentIntent: ${paymentIntent.id}`);
+      
+      await session.commitTransaction();
 
       return paymentIntent;
     } catch (error: any) {
@@ -138,6 +145,10 @@ class PaymentService {
 
       // Generic error fallback
       throw new Error("Failed to process payment. Please try again.");
+    } finally {
+      if (session) {
+        session.endSession();
+      }
     }
   }
 
@@ -161,6 +172,102 @@ class PaymentService {
 
     return { approvedChores, totalAmount };
   }
+
+  static async handleStripeWebhook(sig: any, rawBody: any) {
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        rawBody,
+        sig,
+        webhookSecret
+      );
+    } catch (err: any) {
+      console.error("⚠️  Webhook signature verification failed.", err.message);
+      throw new BadRequestError("Webhook signature verification failed.");
+    }
+
+    
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    const { kidId, parentId } = paymentIntent.metadata;
+    if (!parentId || !kidId) {
+      console.warn('PaymentIntent metadata incomplete or missing');
+      throw new Error('PaymentIntent metadata incomplete or missing')
+    }
+
+    // Handle different event types
+    try {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const { kidId, parentId } = paymentIntent.metadata;
+  
+      if (!kidId || !parentId) {
+        console.error('Missing metadata in payment intent');
+        return;
+      }
+  
+      const session: ClientSession = await mongoose.startSession();
+      await session.withTransaction(async () => {
+        switch (event.type) {
+          case "payment_intent.succeeded":
+            await this.handleSuccessfulPayment(kidId, parentId, session);
+            await this.sendPaymentNotification(
+              parentId,
+              true,
+              paymentIntent.amount,
+              session
+            );
+            break;
+  
+          case "payment_intent.payment_failed":
+            await this.sendPaymentNotification(
+              parentId,
+              false,
+              paymentIntent.amount,
+              session,
+              paymentIntent.last_payment_error?.message
+            );
+            break;
+        }
+      });
+    } catch (err: any) {
+      console.error(`Webhook processing failed: ${err.message}`);
+      // Consider dead-letter queue for retries
+    }
+  }
+
+  private static async sendPaymentNotification(
+    parentId: string,
+    isSuccess: boolean,
+    amount: number,
+    session: ClientSession,
+    errorMessage?: string
+  ) {
+    const parent = await Parent.findById(parentId).session(session);
+    if (!parent || !parent.fcmToken) return;
+  
+    const title = isSuccess ? "Payment Successful" : "Payment Failed";
+    const amountFormatted = `$${(amount / 100).toFixed(2)}`;
+    const body = isSuccess
+      ? `${amountFormatted} was credited to your account`
+      : `${amountFormatted} payment failed: ${errorMessage || "Please try again"}`;
+
+    await Notification.create({
+      recipient: {
+        id: parent._id,
+        role: "Parent",
+      },
+      recipientId: parent._id,
+      title,
+      body
+    }, { session });
+  
+    // 2. Send push notification
+    await sendNotification(parent.fcmToken, title, body, {
+      paymentId: parentId,
+      type: 'payment_update'
+    });
+  }
+  
 
   private static async addFundsToWallet(
     kid: any,

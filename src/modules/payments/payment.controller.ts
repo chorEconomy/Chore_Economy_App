@@ -37,7 +37,7 @@ class PaymentController {
       }
 
       const { kidId } = req.body;
-      const paymentIntent = await PaymentService.processPayment(
+      const paymentIntent = await PaymentService.processStripePayment(
         kidId,
         parent._id
       );
@@ -55,6 +55,19 @@ class PaymentController {
         message: error.message,
       });
       return;
+    }
+  });
+
+ static StripeWebhookHandler = asyncHandler(async (req: Request, res: Response) => {
+    const sig = req.headers['stripe-signature'];
+    const rawBody = req.body;
+  
+    try {
+      await PaymentService.handleStripeWebhook(sig, rawBody);
+      res.status(200).json({ received: true });
+    } catch (error: any) {
+      console.error("Webhook Error:", error.message);
+      res.status(400).send(`Webhook Error: ${error.message}`);
     }
   });
 
