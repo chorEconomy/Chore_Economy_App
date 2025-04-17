@@ -1,7 +1,7 @@
 import { check_if_user_exist_with_email, check_if_user_exists, } from "../../utils/check_user_exists.utils.js";
 import { generateOTP, generateResetOtp, checkOtpRateLimit } from "../../utils/otp.utils.js";
 import { Admin, Kid, Parent } from "./user.model.js";
-import { sendVerificationEmail, sendWelcomeEmail, sendResetEmail } from "../../utils/email_sender.utils";
+import { sendVerificationEmail, sendWelcomeEmail, sendResetEmail } from "../../utils/email_sender.utils.js";
 import { EGender, ERole, EStatus } from "../../models/enums.js";
 import { status_codes } from "../../utils/status_constants.js";
 import { generateTokens, verifyRefreshTokenAndIssueNewAccessToken, } from "../../utils/token_management.js";
