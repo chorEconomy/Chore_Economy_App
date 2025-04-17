@@ -9,15 +9,21 @@ dotenv.config();
 const CRON_SECRET = process.env.CRON_SECRET_KEY;
 
 class PaymentController {
-  static GetKidsForPayment = asyncHandler(
+  static GetPaymentDetailsForKid = asyncHandler(
     async (req: Request, res: Response) => {
       const parent: any = await Parent.findById(req.user);
       if (!parent) {
         throw new UnauthorizedError("Unauthorized access");
       }
 
-      const kidsWithChores = await PaymentService.getKidsWithApprovedChores(
-        parent._id
+      const { kidId } = req.params
+
+      if (!kidId) {
+        throw new BadRequestError("Kid ID is required");
+      }
+
+      const kidsWithChores = await PaymentService.getPaymentDetailsForKid(
+        kidId
       );
 
       res.status(status_codes.HTTP_200_OK).json({

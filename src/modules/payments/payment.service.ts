@@ -25,32 +25,34 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 export const stripeWebhook = express.raw({ type: "application/json" })
 
 class PaymentService {
-  static async getKidsWithApprovedChores(parentId: ObjectId) {
-    const kids = await Kid.find({ parentId });
-    if (!kids.length) {
-      return [];
+  static async getPaymentDetailsForKid(kidId: any) {
+    const kid: any = await Kid.findById(kidId);
+
+    if (!kid) {
+      throw new NotFoundError("Kid not found");
     }
 
-    return Promise.all(
-      kids.map(async (kid) => {
         const approvedChores = await Chore.find({
           kidId: kid._id,
           status: EChoreStatus.Approved,
         }).exec();
+    
+        if (approvedChores.length <= 0) {
+          throw new NotFoundError("No approved chores found for this kid");
+        }
 
         const totalAmount = approvedChores.reduce(
           (sum, chore) => sum + chore.earn,
           0
         );
+    
         return {
           kidId: kid._id,
           kidName: kid.name,
           totalAmount,
-          approvedChores,
           hasApprovedChores: approvedChores.length > 0,
-        };
-      })
-    );
+        }; 
+    
   }
 
   static async handleSuccessfulPayment(kidId: any, parentId: any, session: ClientSession) {

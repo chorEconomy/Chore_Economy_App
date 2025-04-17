@@ -6,7 +6,7 @@ import PaymentController from "./payment.controller.js";
 import express from "express"
 const paymentRouter = express.Router();
 
-paymentRouter.get("/kids", authorizeParent, PaymentController.GetKidsForPayment)
+paymentRouter.get("/kids/:kidId", authorizeParent, PaymentController.GetPaymentDetailsForKid)
 paymentRouter.get("/check-due-payments", PaymentController.CheckOverduePayments)
 paymentRouter.post("/initiate", authorizeParent, PaymentController.InitiatePayment)
 paymentRouter.post("/stripe-webhook", express.raw({type: 'application/json'}), PaymentController.StripeWebhookHandler)

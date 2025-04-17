@@ -16,25 +16,33 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 export const stripeWebhook = express.raw({ type: "application/json" });
 class PaymentService {
-    static async getKidsWithApprovedChores(parentId) {
-        const kids = await Kid.find({ parentId });
-        if (!kids.length) {
-            return [];
+    static async getPaymentDetailsForKid(kidId) {
+        const kid = await Kid.findById(kidId);
+
+        console.log("Kid:", kid);
+        if (!kid) {
+            throw new NotFoundError("Kid not found");
         }
-        return Promise.all(kids.map(async (kid) => {
-            const approvedChores = await Chore.find({
-                kidId: kid._id,
-                status: EChoreStatus.Approved,
-            }).exec();
-            const totalAmount = approvedChores.reduce((sum, chore) => sum + chore.earn, 0);
-            return {
-                kidId: kid._id,
-                kidName: kid.name,
-                totalAmount,
-                approvedChores,
-                hasApprovedChores: approvedChores.length > 0,
-            };
-        }));
+
+        const approvedChores = await Chore.find({
+            kidId: kid._id,
+            status: EChoreStatus.Approved,
+        });
+
+        console.log("Approved Chores:", approvedChores);    
+
+        if (approvedChores.length <= 0) {
+            throw new NotFoundError("No approved chores found for this kid");
+        }
+        
+        const totalAmount = approvedChores.reduce((sum, chore) => sum + chore.earn, 0);
+
+        return {
+            kidId: kid._id,
+            kidName: kid.name,
+            totalAmount, 
+            hasApprovedChores: approvedChores.length > 0,
+        };
     }
     static async handleSuccessfulPayment(kidId, parentId, session) {
         try {

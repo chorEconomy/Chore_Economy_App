@@ -7,12 +7,17 @@ import dotenv from "dotenv";
 dotenv.config();
 const CRON_SECRET = process.env.CRON_SECRET_KEY;
 class PaymentController {
-    static GetKidsForPayment = asyncHandler(async (req, res) => {
+    static GetPaymentDetailsForKid = asyncHandler(async (req, res) => {
         const parent = await Parent.findById(req.user);
         if (!parent) {
             throw new UnauthorizedError("Unauthorized access");
         }
-        const kidsWithChores = await PaymentService.getKidsWithApprovedChores(parent._id);
+        const { kidId } = req.params;
+        console.log("Kid ID:", kidId);
+        if (!kidId) {
+            throw new BadRequestError("Kid ID is required");
+        }
+        const kidsWithChores = await PaymentService.getPaymentDetailsForKid(kidId);
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,
