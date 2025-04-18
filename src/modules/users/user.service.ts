@@ -850,6 +850,7 @@ static async logout(userId: string, refreshToken: string) {
   
     // Format response
     const formattedParents = parentsWithKidsCount.map(parent => ({
+      parentId: parent._id,
       fullName: parent.fullName,
       email: parent.email,
       phoneNumber: parent.phoneNumber,
