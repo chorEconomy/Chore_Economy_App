@@ -788,6 +788,9 @@ static async logout(userId: string, refreshToken: string) {
     return {totalKids: totalKids}
   }
 
+
+
+
   static async getGenderStatistics() {
     try {
         // Execute all counts in parallel for better performance
@@ -870,5 +873,14 @@ static async logout(userId: string, refreshToken: string) {
         itemsPerPage: limit
       }
     };
+  }
+
+  static async fetchKidsForParent(parentId: any) {
+    const parent = await Parent.findById(parentId);
+    if (!parent) {
+      throw new NotFoundError("Parent not found")
+    }
+    const kids = await Kid.find({ parentId: parentId });
+    return kids;
   }
 }

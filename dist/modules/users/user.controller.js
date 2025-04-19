@@ -228,7 +228,7 @@ class UserController {
         });
         return;
     });
-    static fetchTotalKids = asyncHandler(async (req, res) => {
+    static fetchTotalNumberOfKids = asyncHandler(async (req, res) => {
         const admin = Admin.findById(req.user);
         if (!admin) {
             throw new UnauthorizedError("Unauthorized access");
@@ -280,6 +280,23 @@ class UserController {
             status: 200,
             success: true,
             data: parents,
+        });
+        return;
+    });
+    static fetchKidsForParent = asyncHandler(async (req, res, next) => {
+        const admin = await Admin.findById(req.user);
+        if (!admin) {
+            throw new UnauthorizedError("Unauthorized access");
+        }
+        const { parentId } = req.params;
+        if (!parentId) {
+            throw new BadRequestError("Parent Id is required");
+        }
+        const kids = await AuthService.fetchKidsForParent(parentId);
+        res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            data: kids,
         });
         return;
     });

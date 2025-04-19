@@ -27,8 +27,9 @@ authRouter.post("/kids/login", UserController.loginKid);
 authRouter.post("/admin", UserController.registerAdmin);
 authRouter.post("/admin/login", UserController.loginAdmin);
 authRouter.get("/admin/users/count", authorizeAdmin, UserController.fetchTotalUsers);
-authRouter.get("/admin/kids/count", authorizeAdmin, UserController.fetchTotalKids);
+authRouter.get("/admin/kids/count", authorizeAdmin, UserController.fetchTotalNumberOfKids);
 authRouter.get("/admin/parents/count", authorizeAdmin, UserController.fetchTotalParents);
 authRouter.get("/admin/gender-statistics", authorizeAdmin, UserController.fetchGenderStatistics);
 authRouter.get("/admin/parents", authorizeAdmin, UserController.fetchParents);
+authRouter.get("/admin/kids/:parentId", authorizeAdmin, UserController.fetchKidsForParent)
 export default authRouter;

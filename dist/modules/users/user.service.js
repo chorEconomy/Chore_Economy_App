@@ -694,4 +694,12 @@ export class AuthService {
             }
         };
     }
+    static async fetchKidsForParent(parentId) {
+        const parent = await Parent.findById(parentId);
+        if (!parent) {
+            throw new NotFoundError("Parent not found");
+        }
+        const kids = await Kid.find({ parentId: parentId });
+        return kids;
+    }
 }
