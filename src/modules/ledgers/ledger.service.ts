@@ -16,6 +16,7 @@ class LedgerTransactionService {
         const data = await LedgerTransaction.findOneAndDelete({kid: kid._id, _id: transactionId });
         return data;    
     }
+
 }
 
 export default LedgerTransactionService;

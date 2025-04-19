@@ -17,6 +17,7 @@ import mongoose, { ClientSession, ObjectId } from "mongoose";
 import { Wallet } from "../wallets/wallet.model.js";
 import {Notification} from "../notifications/notification.model.js";
 import { check_if_user_exists } from "../../utils/check_user_exists.utils.js";
+import ledgerModel from "../ledgers/ledger.model.js";
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -56,7 +57,7 @@ class PaymentService {
     
   }
 
-  static async handleSuccessfulPayment(kidId: any, parentId: any, session: ClientSession) {
+  static async handleSuccessfulPayment(kidId: any, parentId: any, amount: any, session: ClientSession) {
 
     try { 
 
@@ -68,7 +69,7 @@ class PaymentService {
       // const paymentIntent = await this.processStripePayment(totalAmount, kidId, parentId);
 
       // All database operations within the transaction
-      await this.addFundsToWallet(kid, totalAmount, session);
+      await this.addFundsToWallet(kid, amount, session);
       await this.markChoresAsCompleted(kidId, session);
       await this.updateParentCanCreateFlag(parentId, session);
       await this.updateNextDueDate(parentId, session);
@@ -212,7 +213,9 @@ class PaymentService {
       await session.withTransaction(async () => {
         switch (event.type) {
           case "payment_intent.succeeded":
-            await this.handleSuccessfulPayment(kidId, parentId, session);
+            await this.handleSuccessfulPayment(kidId, parentId, paymentIntent.amount, session);
+
+              
             await this.sendPaymentNotification(
               parentId,
               true,
