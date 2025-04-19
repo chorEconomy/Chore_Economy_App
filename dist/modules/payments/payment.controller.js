@@ -13,7 +13,6 @@ class PaymentController {
             throw new UnauthorizedError("Unauthorized access");
         }
         const { kidId } = req.params;
-        console.log("Kid ID:", kidId);
         if (!kidId) {
             throw new BadRequestError("Kid ID is required");
         }

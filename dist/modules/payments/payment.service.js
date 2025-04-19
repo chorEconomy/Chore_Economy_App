@@ -18,40 +18,32 @@ export const stripeWebhook = express.raw({ type: "application/json" });
 class PaymentService {
     static async getPaymentDetailsForKid(kidId) {
         const kid = await Kid.findById(kidId);
-
-        console.log("Kid:", kid);
         if (!kid) {
             throw new NotFoundError("Kid not found");
         }
-
         const approvedChores = await Chore.find({
             kidId: kid._id,
             status: EChoreStatus.Approved,
-        });
-
-        console.log("Approved Chores:", approvedChores);    
-
+        }).exec();
         if (approvedChores.length <= 0) {
             throw new NotFoundError("No approved chores found for this kid");
         }
-        
         const totalAmount = approvedChores.reduce((sum, chore) => sum + chore.earn, 0);
-
         return {
             kidId: kid._id,
             kidName: kid.name,
-            totalAmount, 
+            totalAmount,
             approvedChores,
             hasApprovedChores: approvedChores.length > 0,
         };
     }
-    static async handleSuccessfulPayment(kidId, parentId, session) {
+    static async handleSuccessfulPayment(kidId, parentId, amount, session) {
         try {
             const kid = await this.validateKidAndParent(kidId, parentId, session);
             const { approvedChores, totalAmount } = await this.getApprovedChoresAndTotalAmount(kidId, session);
             // const paymentIntent = await this.processStripePayment(totalAmount, kidId, parentId);
             // All database operations within the transaction
-            await this.addFundsToWallet(kid, totalAmount, session);
+            await this.addFundsToWallet(kid, amount, session);
             await this.markChoresAsCompleted(kidId, session);
             await this.updateParentCanCreateFlag(parentId, session);
             await this.updateNextDueDate(parentId, session);
@@ -161,7 +153,7 @@ class PaymentService {
             await session.withTransaction(async () => {
                 switch (event.type) {
                     case "payment_intent.succeeded":
-                        await this.handleSuccessfulPayment(kidId, parentId, session);
+                        await this.handleSuccessfulPayment(kidId, parentId, paymentIntent.amount, session);
                         await this.sendPaymentNotification(parentId, true, paymentIntent.amount, session);
                         break;
                     case "payment_intent.payment_failed":
