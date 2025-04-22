@@ -211,15 +211,16 @@ class PaymentService {
   
       const session: ClientSession = await mongoose.startSession();
       await session.withTransaction(async () => {
+        const amountInDollars = paymentIntent.amount / 100;
         switch (event.type) {
           case "payment_intent.succeeded":
-            await this.handleSuccessfulPayment(kidId, parentId, paymentIntent.amount, session);
+            await this.handleSuccessfulPayment(kidId, parentId, amountInDollars, session);
 
               
             await this.sendPaymentNotification(
               parentId,
               true,
-              paymentIntent.amount,
+              amountInDollars,
               session
             );
             break;
@@ -228,7 +229,7 @@ class PaymentService {
             await this.sendPaymentNotification(
               parentId,
               false,
-              paymentIntent.amount,
+              amountInDollars,
               session,
               paymentIntent.last_payment_error?.message
             );

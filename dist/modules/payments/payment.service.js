@@ -38,30 +38,35 @@ class PaymentService {
         };
     }
     static async handleSuccessfulPayment(kidId, parentId, amount, session) {
+        console.log(`Starting payment processing for kid ${kidId}, parent ${parentId}, amount ${amount}`);
         try {
             const kid = await this.validateKidAndParent(kidId, parentId, session);
+            console.log(`Validated kid and parent`);
+    
             const { approvedChores, totalAmount } = await this.getApprovedChoresAndTotalAmount(kidId, session);
-            // const paymentIntent = await this.processStripePayment(totalAmount, kidId, parentId);
-            // All database operations within the transaction
+            console.log(`Found ${approvedChores.length} approved chores totaling $${totalAmount}`);
+    
             await this.addFundsToWallet(kid, amount, session);
+            console.log(`Funds added to wallet`);
+    
             await this.markChoresAsCompleted(kidId, session);
+            console.log(`Chores marked as completed`);
+    
             await this.updateParentCanCreateFlag(parentId, session);
+            console.log(`Parent canCreate flag updated`);
+    
             await this.updateNextDueDate(parentId, session);
-            // Commit the transaction
+            console.log(`Next due date updated`);
+    
             await session.commitTransaction();
-            return;
-        }
-        catch (error) {
+            console.log(`Transaction committed successfully`);
+        } catch (error) {
+            console.error("Payment failed:", error);
             if (session) {
                 await session.abortTransaction();
+                console.log(`Transaction aborted`);
             }
-            console.error("Payment failed:", error);
-            throw new Error(`Payment failed: ${error.message}`);
-        }
-        finally {
-            if (session) {
-                session.endSession();
-            }
+            throw error;
         }
     }
     static async validateKidAndParent(kidId, parentId, session) {
@@ -151,17 +156,19 @@ class PaymentService {
             }
             const session = await mongoose.startSession();
             await session.withTransaction(async () => {
+                const amountInDollars = paymentIntent.amount / 100;
                 switch (event.type) {
                     case "payment_intent.succeeded":
-                        await this.handleSuccessfulPayment(kidId, parentId, paymentIntent.amount, session);
-                        await this.sendPaymentNotification(parentId, true, paymentIntent.amount, session);
+                        await this.handleSuccessfulPayment(kidId, parentId, amountInDollars, session);
+                        await this.sendPaymentNotification(parentId, true, amountInDollars, session);
                         break;
                     case "payment_intent.payment_failed":
-                        await this.sendPaymentNotification(parentId, false, paymentIntent.amount, session, paymentIntent.last_payment_error?.message);
+                        await this.sendPaymentNotification(parentId, false, amountInDollars, session, paymentIntent.last_payment_error?.message);
                         break;
                 }
             });
         }
+
         catch (err) {
             console.error(`Webhook processing failed: ${err.message}`);
             // Consider dead-letter queue for retries
