@@ -50,9 +50,8 @@ class PaymentController {
     });
     static StripeWebhookHandler = asyncHandler(async (req, res) => {
         const sig = req.headers['stripe-signature'];
-        const rawBody = req.body;
         try {
-            await PaymentService.handleStripeWebhook(sig, rawBody);
+            await PaymentService.handleStripeWebhook(sig, req.rawBody);
             res.status(200).json({ received: true });
         }
         catch (error) {

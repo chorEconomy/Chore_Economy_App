@@ -57,39 +57,93 @@ class PaymentService {
     
   }
 
-  static async handleSuccessfulPayment(kidId: any, parentId: any, amount: any, session: ClientSession) {
 
-    try { 
-
-      const kid = await this.validateKidAndParent(kidId, parentId, session);
-
-      const { approvedChores, totalAmount } =
-        await this.getApprovedChoresAndTotalAmount(kidId, session);
-
-      // const paymentIntent = await this.processStripePayment(totalAmount, kidId, parentId);
-
-      // All database operations within the transaction
-      await this.addFundsToWallet(kid, amount, session);
-      await this.markChoresAsCompleted(kidId, session);
-      await this.updateParentCanCreateFlag(parentId, session);
-      await this.updateNextDueDate(parentId, session);
-
-      // Commit the transaction
-      await session.commitTransaction();
-
-      return
-    } catch (error: any) {
-      if (session) {
-        await session.abortTransaction();
-      }
-      console.error("Payment failed:", error);
-      throw new Error(`Payment failed: ${error.message}`);
-    } finally {
-      if (session) {
-        session.endSession();
-      }
+  static async handleStripeWebhook(sig: string, rawBody: Buffer): Promise<{ success: boolean; message?: string }> {
+    let event: Stripe.Event | undefined;
+    let session: mongoose.ClientSession | null = null;
+    
+    try {
+        // 1. Verify webhook signature
+        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+        
+        // 2. Only process specific payment_intent events
+        if (!['payment_intent.succeeded', 'payment_intent.payment_failed'].includes(event.type)) {
+            console.log(`Skipping event: ${event.type}`);
+            return { success: true, message: `Skipped ${event.type}` };
+        }
+        
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const { kidId, parentId } = paymentIntent.metadata || {};
+        
+        // 3. Validate metadata
+        if (!kidId || !parentId) {
+            throw new BadRequestError('PaymentIntent missing required metadata');
+        }
+        
+        const amountInDollars: number = paymentIntent.amount / 100;
+        
+        // 4. Process based on event type
+        if (event.type === 'payment_intent.succeeded') {
+            // Create a fresh session for successful payment processing
+            session = await mongoose.startSession();
+            try {
+                session.startTransaction();
+                
+                // Process the payment with this session
+                const kid = await this.validateKidAndParent(kidId, parentId, session); 
+                
+                if (!kid) {
+                    throw new NotFoundError("Kid not found");
+                }
+                
+                await this.addFundsToWallet(kid, amountInDollars, session);
+                await this.markChoresAsCompleted(kidId, session);
+                await this.updateParentCanCreateFlag(parentId, session);
+                await this.updateNextDueDate(parentId, session);
+                
+                await session.commitTransaction();
+                await this.sendPaymentNotification(parentId, true, amountInDollars);
+                // Commit the transaction
+                
+                return { success: true };
+            } catch (error) {
+                // Handle transaction errors
+                if (session.inTransaction()) {
+                    await session.abortTransaction().catch((abortError: Error) => {
+                        console.error('Abort transaction error:', abortError);
+                    });
+                }
+                throw error;
+            }
+        } else if (event.type === 'payment_intent.payment_failed') {
+            // For failed payments, just send notification (no transaction needed)
+            const errorMessage = paymentIntent.last_payment_error?.message || '';
+            await this.sendPaymentNotification(parentId, false, amountInDollars, errorMessage);
+            return { success: true };
+        }
+        
+        // Fallback return for typescript compiler (should never reach here)
+        return { success: false, message: "Unhandled event type" };
     }
-  }
+    catch (err: any) {
+        console.error(`Webhook processing failed: ${err.message}`, {
+            event_id: event?.id,
+            error: err.stack
+        });
+        throw err;
+    }
+    finally {
+        // Always end the session if it exists
+        if (session) {
+            try {
+                await session.endSession();
+            } catch (e: any) {
+                console.error('Session end error:', e);
+            }
+        }
+    }
+}
+  
 
   private static async validateKidAndParent(
     kidId: any,
@@ -177,79 +231,15 @@ class PaymentService {
     return { approvedChores, totalAmount };
   }
 
-  static async handleStripeWebhook(sig: any, rawBody: any) {
-    let event;
-
-    try {
-      event = stripe.webhooks.constructEvent(
-        rawBody,
-        sig,
-        webhookSecret
-      );
-    } catch (err: any) {
-      console.error("⚠️  Webhook signature verification failed.", err.message);
-      throw new BadRequestError("Webhook signature verification failed.");
-    }
-
-    
-    const paymentIntent = event.data.object as Stripe.PaymentIntent;
-    const { kidId, parentId } = paymentIntent.metadata;
-    if (!parentId || !kidId) {
-      console.warn('PaymentIntent metadata incomplete or missing');
-      throw new Error('PaymentIntent metadata incomplete or missing')
-    }
-
-    // Handle different event types
-    try {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      const { kidId, parentId } = paymentIntent.metadata;
-  
-      if (!kidId || !parentId) {
-        console.error('Missing metadata in payment intent');
-        return;
-      }
-  
-      const session: ClientSession = await mongoose.startSession();
-      await session.withTransaction(async () => {
-        const amountInDollars = paymentIntent.amount / 100;
-        switch (event.type) {
-          case "payment_intent.succeeded":
-            await this.handleSuccessfulPayment(kidId, parentId, amountInDollars, session);
-
-              
-            await this.sendPaymentNotification(
-              parentId,
-              true,
-              amountInDollars,
-              session
-            );
-            break;
-  
-          case "payment_intent.payment_failed":
-            await this.sendPaymentNotification(
-              parentId,
-              false,
-              amountInDollars,
-              session,
-              paymentIntent.last_payment_error?.message
-            );
-            break;
-        }
-      });
-    } catch (err: any) {
-      console.error(`Webhook processing failed: ${err.message}`);
-      // Consider dead-letter queue for retries
-    }
-  }
+ 
 
   private static async sendPaymentNotification(
     parentId: string,
     isSuccess: boolean,
-    amount: number,
-    session: ClientSession,
-    errorMessage?: string
+    amount: number,  
+    errorMessage?: string,
   ) {
-    const parent = await Parent.findById(parentId).session(session);
+    const parent = await Parent.findById(parentId);
     if (!parent || !parent.fcmToken) return;
   
     const title = isSuccess ? "Payment Successful" : "Payment Failed";
@@ -264,9 +254,9 @@ class PaymentService {
         role: "Parent",
       },
       recipientId: parent._id,
-      title,
-      body
-    }, { session });
+      title: title,
+      message: body,
+    });  
   
     // 2. Send push notification
     await sendNotification(parent.fcmToken, title, body, {

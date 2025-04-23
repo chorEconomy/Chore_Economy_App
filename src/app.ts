@@ -21,7 +21,13 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"] // Allowed headers
 }));
 
-app.use(express.json())
+app.use(express.json({
+  verify: (req: any, res: Response, buf) => {
+    if (req.originalUrl.startsWith('/api/v1/payments/stripe-webhook')) {
+      req.rawBody = buf.toString('utf8');
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 //====== routes for application========//

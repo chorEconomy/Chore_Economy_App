@@ -17,7 +17,13 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], // Allowed methods
     allowedHeaders: ["Content-Type", "Authorization"] // Allowed headers
 }));
-app.use(express.json());
+app.use(express.json({
+    verify: (req, res, buf) => {
+        if (req.originalUrl.startsWith('/api/v1/payments/stripe-webhook')) {
+            req.rawBody = buf.toString('utf8');
+        }
+    }
+}));
 app.use(express.urlencoded({ extended: true }));
 //====== routes for application========//
 app.get("/api/v1/home", (req, res) => {

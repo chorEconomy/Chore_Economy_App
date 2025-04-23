@@ -31,5 +31,5 @@ authRouter.get("/admin/kids/count", authorizeAdmin, UserController.fetchTotalNum
 authRouter.get("/admin/parents/count", authorizeAdmin, UserController.fetchTotalParents);
 authRouter.get("/admin/gender-statistics", authorizeAdmin, UserController.fetchGenderStatistics);
 authRouter.get("/admin/parents", authorizeAdmin, UserController.fetchParents);
-authRouter.get("/admin/kids/:parentId", authorizeAdmin, UserController.fetchKidsForParent)
+authRouter.get("/admin/kids/:parentId", authorizeAdmin, UserController.fetchKidsForParent);
 export default authRouter;

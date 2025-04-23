@@ -1,7 +1,6 @@
 import { check_if_user_exists } from "../../utils/check_user_exists.utils.js";
 import { status_codes } from "../../utils/status_constants.js";
 import jwt from "jsonwebtoken";
-
 const authenticateUser = async (req, res, next) => {
     try {
         const secret = process.env.ACCESS_SECRET;
