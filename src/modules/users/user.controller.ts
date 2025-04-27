@@ -94,6 +94,11 @@ class UserController {
     }
      
     const { refresh_token } = req.body;
+    console.log("refresh_token", refresh_token)
+    
+ if (!refresh_token) {
+      throw new BadRequestError('Refresh token is required');
+    }
 
     await AuthService.logout(user._id, refresh_token);
 

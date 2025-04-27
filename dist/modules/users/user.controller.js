@@ -73,7 +73,15 @@ class UserController {
         if (!user) {
             throw new UnauthorizedError("Unauthorized access");
         }
+        
         const { refresh_token } = req.body;
+        
+        console.log("refresh_token", refresh_token)
+            
+         if (!refresh_token) {
+              throw new BadRequestError('Refresh token is required');
+            }
+        
         await AuthService.logout(user._id, refresh_token);
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,

@@ -226,12 +226,9 @@ export class AuthService {
     };
   }
 
-static async logout(userId: string, refreshToken: string) {
+static async logout(userId: string, refreshToken: any) {
     // Validate inputs
-    if (!refreshToken) {
-      throw new BadRequestError('Refresh token is required');
-    }
-
+   
     // Verify user exists
     const user = await check_if_user_exists(userId);
   
