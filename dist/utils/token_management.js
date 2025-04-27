@@ -20,7 +20,7 @@ async function generateTokens(user) {
     if (!user || !ACCESS_SECRET || !REFRESH_SECRET) {
         throw new Error("Unable to generate tokens");
     }
-    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "1m" });
+    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "15m" });
     const refresh_token = jwt.sign({ sub: user._id }, REFRESH_SECRET, { expiresIn: "3d" });
     // Update the user's last login time
     await user.updateOne({ lastLogin: new Date() });
@@ -32,7 +32,7 @@ async function generate_reset_token(user) {
     if (!user || !ACCESS_SECRET) {
         throw new Error("Unable to generate token");
     }
-    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "1m" });
+    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "15m" });
     return access_token;
 }
 function decode_token(token) {
@@ -62,7 +62,7 @@ async function verifyRefreshTokenAndIssueNewAccessToken(refreshToken) {
         // **Delete the used refresh token** to prevent reuse
         await RefreshToken.deleteOne({ userId: decoded.sub, refreshToken });
         // Generate new access and refresh tokens
-        const newAccessToken = jwt.sign({ sub: decoded.sub }, ACCESS_SECRET, { expiresIn: '1m' });
+        const newAccessToken = jwt.sign({ sub: decoded.sub }, ACCESS_SECRET, { expiresIn: '15m' });
         const newRefreshToken = jwt.sign({ sub: decoded.sub }, REFRESH_SECRET, { expiresIn: '3d' });
         // Store the new refresh token in MongoDB
         await storeRefreshToken(decoded.sub, newRefreshToken);
