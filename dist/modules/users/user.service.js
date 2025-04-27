@@ -151,6 +151,7 @@ export class AuthService {
         };
     }
     static async logout(userId, refreshToken) {
+        // Validate inputs
         // Verify user exists
         const user = await check_if_user_exists(userId);
         if (!user) {
