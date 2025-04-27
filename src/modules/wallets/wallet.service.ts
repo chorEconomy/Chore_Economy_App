@@ -195,8 +195,8 @@ class WalletService {
     return wallet;
   }
 
-  static async fetchWallet(kid: any) {
-        const wallet = await Wallet.findOne({ kid: kid._id });
+  static async fetchWallet(kidId: any) {
+        const wallet = await Wallet.findOne({ kid: kidId });
         return wallet;
   }   
 }

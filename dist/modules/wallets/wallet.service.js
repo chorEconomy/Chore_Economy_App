@@ -117,8 +117,8 @@ class WalletService {
         await transaction.save(options);
         return wallet;
     }
-    static async fetchWallet(kid) {
-        const wallet = await Wallet.findOne({ kid: kid._id });
+    static async fetchWallet(kidId) {
+        const wallet = await Wallet.findOne({ kid: kidId });
         return wallet;
     }
 }
