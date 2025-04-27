@@ -39,7 +39,7 @@ class PaymentService {
         }).exec();
     
         if (approvedChores.length <= 0) {
-          throw new NotFoundError("No approved chores found for this kid");
+           return []
         }
 
         const totalAmount = approvedChores.reduce(
