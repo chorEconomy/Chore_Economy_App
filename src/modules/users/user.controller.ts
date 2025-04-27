@@ -95,7 +95,7 @@ class UserController {
      
     const { refresh_token } = req.body;
     console.log("refresh_token", refresh_token)
-    
+
  if (!refresh_token) {
       throw new BadRequestError('Refresh token is required');
     }
@@ -226,9 +226,31 @@ class UserController {
     await AuthService.FetchParent(req, res);
   }
 
-  static async fetchKid(req: Request, res: Response, next: NextFunction) {
-    await AuthService.FetchKid(req, res);
-  }
+  static fetchKid = asyncHandler(async (req: Request, res: Response) => {
+
+    const user = await check_if_user_exists(req.user)
+
+    if (!user) {
+      throw new UnauthorizedError("Unauthorized access")
+    }
+
+    const { kidId } = req.params;
+
+    if (!kidId) {
+      throw new BadRequestError("Kid ID is required");
+    }
+
+    const kid = await AuthService.fetchKid(kidId);
+
+   
+    res.status(status_codes.HTTP_200_OK).json({
+      status: 200,
+      success: true,
+      data: kid,
+    });
+    return;
+  })
+
 
   static async fetchKidsForSingleParent(
     req: Request,

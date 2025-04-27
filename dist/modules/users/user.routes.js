@@ -17,7 +17,7 @@ authRouter.post("/forgot-password", UserController.forgotPassword);
 authRouter.post("/resend-otp", otpLimiter, UserController.resendOTP);
 authRouter.post("/reset-password", UserController.resetPassword);
 authRouter.get("/parent/profile/:id", UserController.fetchParent);
-authRouter.get("/kid/profile/:id", UserController.fetchKid);
+authRouter.get("/kid/profile/:id", authenticateUser, UserController.fetchKid);
 authRouter.get("/kids", authorizeParent, UserController.fetchKidsForSingleParent);
 authRouter.put("/parent/update", upload.single("profile-image"), authorizeParent, UserController.editProfile);
 authRouter.post("/parent/kids", upload.single("profile-image"), authorizeParent, validateAuthInputForKid, UserController.createKidProfile);

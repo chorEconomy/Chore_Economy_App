@@ -168,9 +168,23 @@ class UserController {
     static async fetchParent(req, res, next) {
         await AuthService.FetchParent(req, res);
     }
-    static async fetchKid(req, res, next) {
-        await AuthService.FetchKid(req, res);
-    }
+    static fetchKid = asyncHandler(async (req, res) => {
+        const user = await check_if_user_exists(req.user);
+        if (!user) {
+            throw new UnauthorizedError("Unauthorized access");
+        }
+        const { kidId } = req.params;
+        if (!kidId) {
+            throw new BadRequestError("Kid ID is required");
+        }
+        const kid = await AuthService.fetchKid(kidId);
+        res.status(status_codes.HTTP_200_OK).json({
+            status: 200,
+            success: true,
+            data: kid,
+        });
+        return;
+    });
     static async fetchKidsForSingleParent(req, res, next) {
         await AuthService.FetchKidsForSingleParent(req, res);
     }

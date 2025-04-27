@@ -451,45 +451,13 @@ export class AuthService {
             });
         }
     }
-    static async FetchKid(req, res) {
-        try {
-            if (!req.params) {
-                return res
-                    .status(status_codes.HTTP_400_BAD_REQUEST)
-                    .json({
-                    status: 400,
-                    success: false,
-                    message: "Please provide a valid Id",
-                });
-            }
-            const { id } = req.params;
-            const user = await Kid.findById(id);
-            if (!user) {
-                return res
-                    .status(status_codes.HTTP_404_NOT_FOUND)
-                    .json({
-                    status: 404,
-                    success: false,
-                    message: "Kid's profile not found",
-                });
-            }
-            return res.status(status_codes.HTTP_200_OK).json({
-                status: 200,
-                data: {
-                    ...user.toObject(),
-                    password: undefined,
-                },
-            });
+    static async fetchKid(kidId) {
+        const kid = await Kid.findById(kidId);
+        if (!kid) {
+            throw new NotFoundError("Kid's profile not found ");
         }
-        catch (error) {
-            console.error("Fetching kid error:", error);
-            return res.status(status_codes.HTTP_500_INTERNAL_SERVER_ERROR).json({
-                status: 500,
-                success: false,
-                message: "Internal Server Error",
-                error: error?.message,
-            });
-        }
+        const data = { ...kid.toObject(), password: undefined };
+        return data;
     }
     static async FetchKidsForSingleParent(req, res) {
         try {
