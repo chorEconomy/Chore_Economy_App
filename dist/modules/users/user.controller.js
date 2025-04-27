@@ -173,11 +173,11 @@ class UserController {
         if (!user) {
             throw new UnauthorizedError("Unauthorized access");
         }
-        const { kidId } = req.params;
-        if (!kidId) {
+        const { id } = req.params;
+        if (!id) {
             throw new BadRequestError("Kid ID is required");
         }
-        const kid = await AuthService.fetchKid(kidId);
+        const kid = await AuthService.fetchKid(id);
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,
