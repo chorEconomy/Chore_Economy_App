@@ -179,7 +179,7 @@ class SavingService {
             try {
                  // 1. Skip if kid doesn't exist or has no FCM token
                 if (!saving.kidId || !saving.kidId.fcmToken) {
-                    console.log(`Skipping saving ${saving._id} for kid ${saving.kidId?._id} - no FCM token`);
+                    console.log(`Skipping saving ${saving._id} for kid ${saving.kidId} - no FCM token`);
         console.warn(`Skipping saving ${saving._id} - no kid or FCM token`);
         continue;
       }
