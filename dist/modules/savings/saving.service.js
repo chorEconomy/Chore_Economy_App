@@ -177,6 +177,12 @@ class SavingService {
         }).populate('kidId');
         for (const saving of savings) {
             try {
+                 // 1. Skip if kid doesn't exist or has no FCM token
+      if (!saving.kidId || !saving.kidId.fcmToken) {
+        console.warn(`Skipping saving ${saving._id} - no kid or FCM token`);
+        continue;
+      }
+
                 const lastPaymentDate = saving.payments.length > 0 ?
                     new Date(Math.max(...saving.payments.map((p) => new Date(p.date).getTime()))) :
                     saving.startDate;
