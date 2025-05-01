@@ -4,22 +4,23 @@ import { setTimeout } from 'timers/promises';
 import * as dotenv from "dotenv";
 dotenv.config();
 // Configuration
-const API_BASE_URL = 'https://chore-economy-app.onrender.com/api/v1';
-const CRON_SECRET = process.env.CRON_SECRET_KEY;
+// const API_BASE_URL = 'https://chore-economy-app.onrender.com/api/v1';
+const API_BASE_URL = 'http://localhost:5000/api/v1';
+const CRON_SECRET = process.env.CRON_SECRET_KEY || 'your-secret-key-here';
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000;
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 10000;
 const JOBS = [
-    {
-        name: 'Savings Reminders',
-        endpoint: '/savings/savings-reminders',
-        schedule: '*/1 * * * *',
-        logPrefix: 'Savings'
-    },
+    // {
+    //     name: 'Savings Reminders',
+    //     endpoint: '/savings/savings-reminders',
+    //     schedule: '0 9 * * *',
+    //     logPrefix: 'Savings'
+    // },
     {
         name: 'Payment Checker',
         endpoint: '/payments/check-due-payments',
-        schedule: '*/2 * * * *',
+        schedule: '* * * * *',
         logPrefix: 'Payments'
     }
 ];
@@ -27,9 +28,7 @@ const JOBS = [
 const makeSecureApiRequest = async (endpoint, jobName) => {
     let attempt = 0;
     let lastError = null;
-  
     const url = `${API_BASE_URL}${endpoint}`;
-    console.log("CRON_SECRET", CRON_SECRET);
     console.log(`🔍 Testing endpoint: ${url}`);
     while (attempt < MAX_RETRIES) {
         attempt++;
@@ -38,14 +37,16 @@ const makeSecureApiRequest = async (endpoint, jobName) => {
             const response = await axios.get(url, {
                 timeout: REQUEST_TIMEOUT,
                 headers: {
-                    'x-cron-secret': CRON_SECRET
+                    'X-Cron-Secret': CRON_SECRET,
+                    'X-Job-Name': jobName,
+                    'User-Agent': 'SecureCron/1.0'
                 }
             });
             console.log(`⚡ Response time: ${Date.now() - startTime}ms`); // New metric
             return {
                 success: true,
-                status: response.status,
                 data: response,
+                status: response.status,
                 attempts: attempt,
                 duration: Date.now() - startTime
             };

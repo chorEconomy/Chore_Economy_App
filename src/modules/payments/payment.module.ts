@@ -5,7 +5,7 @@ interface IPaymentSchedule extends Document {
   parent: ObjectId;
   scheduleType: string;
   startDate: Date;
-  nextPaymentDate: Date;
+  nextDueDate: Date;
   status: string;
 }
 
@@ -24,7 +24,7 @@ const paymentScheduleSchema: Schema = new Schema<IPaymentSchedule>({
     type: Date, 
     required: true 
   },
-  nextPaymentDate: { 
+  nextDueDate: { 
     type: Date, 
     required: true 
   },

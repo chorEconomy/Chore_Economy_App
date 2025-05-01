@@ -15,7 +15,7 @@ const paymentScheduleSchema = new Schema({
         type: Date,
         required: true
     },
-    nextPaymentDate: {
+    nextDueDate: {
         type: Date,
         required: true
     },

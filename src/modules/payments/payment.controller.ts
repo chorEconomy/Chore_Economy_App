@@ -110,19 +110,22 @@ class PaymentController {
       throw new BadRequestError("Invalid start date format. Use YYYY-MM-DD.");
     }
 
-    // Parse the start date
     const start = new Date(startDate);
-
-    // Check if the date is valid
-    if (isNaN(start.getTime())) {
-      throw new BadRequestError("Invalid start date.");
-    }
-
-    // Check if the date is in the past
     const today = new Date();
-    if (start < today) {
-      throw new BadRequestError("Start date cannot be in the past.");
+    
+    // Validate start date format
+    if (isNaN(start.getTime())) {
+        throw new BadRequestError("Invalid start date.");
     }
+    
+    // Compare only the calendar dates by resetting time
+    start.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    if (start < today) {
+        throw new BadRequestError("Start date cannot be in the past.");
+    }
+    
     const paymentSchedule = await PaymentService.createSchedule(
       parent._id,
       scheduleType,

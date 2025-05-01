@@ -256,7 +256,7 @@ class PaymentService {
             parent: parentId,
             scheduleType,
             startDate,
-            nextPaymentDate: nextDueDate,
+            nextDueDate: nextDueDate,
         });
         await paymentSchedule.save();
         return paymentSchedule;
@@ -268,15 +268,126 @@ class PaymentService {
         const updatedWallet = await WalletService.deductFundsFromWallet(kid._id, wallet._id, wallet.mainBalance, "Withdrawal from wallet", ETransactionName.Withdrawal);
         return updatedWallet;
     }
+    //   static async checkDuePayments() {
+    //     const today = new Date();
+    //     const tomorrow = new Date(today);
+    //     tomorrow.setDate(tomorrow.getDate() + 1);
+    //     const yesterday = new Date(today);
+    //             yesterday.setDate(yesterday.getDate() - 1);
+    //     today.setHours(0, 0, 0, 0);
+    // tomorrow.setHours(0, 0, 0, 0);
+    // yesterday.setHours(0, 0, 0, 0);
+    //     // Find all parents with unpaid chores
+    //     const unpaidChores = await Chore.find({
+    //       status: "approved", // Only consider unpaid chores
+    //     }).populate("parentId");
+    //     // Group unpaid chores by parent
+    //     const parentsWithUnpaidChores: any = {};
+    //     for (const chore of unpaidChores) {
+    //       const parentId = (chore.parentId as any)._id.toString();
+    //       if (!parentsWithUnpaidChores[parentId]) {
+    //         parentsWithUnpaidChores[parentId] = {
+    //           parent: chore.parentId,
+    //           unpaidChores: [],
+    //         };
+    //       }
+    //       parentsWithUnpaidChores[parentId].unpaidChores.push(chore);
+    //     }
+    //     // Iterate through parents with unpaid chores
+    //     for (const parentId in parentsWithUnpaidChores) {
+    //       const { parent, unpaidChores } = parentsWithUnpaidChores[parentId];
+    //       // Find the parent's payment schedule
+    //       const paymentSchedule = await PaymentSchedule.findOne({
+    //         parent: parent._id,
+    //         status: "active",
+    //       });
+    //       if (paymentSchedule) {
+    //         // Cast paymentSchedule to 'any' to access nextDueDate
+    //         const schedule = paymentSchedule as any;
+    //         // Check if today is the day before the due date
+    //         if (schedule.nextDueDate.getTime() === tomorrow.getTime()) {
+    //           // Send 24-hour reminder
+    //           const notification = await Notification.create({
+    //             recipient: {
+    //               id: parent._id,
+    //               role: "Parent",
+    //             },
+    //             recipientId: parent._id,
+    //             title: "Payment Reminder",
+    //             message: `Reminder: You have unpaid chores. Payment is due tomorrow.`
+    //           });
+    //           await sendNotification(
+    //             parent.fcmToken,
+    //             notification.title,
+    //             notification.message,
+    //             { notificationId: notification._id }
+    //           );
+    //         }
+    //         // Check if today is the due date
+    //         if (schedule.nextDueDate.getTime() === today.getTime()) {
+    //           // Send due date notification
+    //           const notification = await Notification.create({
+    //             recipient: {
+    //               id: parent._id,
+    //               role: "Parent",
+    //             },
+    //             recipientId: parent._id,
+    //             title: "Payment Due",
+    //             message: `Reminder: You have unpaid chores. Payment is due today.`
+    //           });
+    //           await sendNotification(
+    //             parent.fcmToken,
+    //             notification.title,
+    //             notification.message,
+    //             { notificationId: notification._id }
+    //           );
+    //         }
+    //         // Check if today is 24 hours after the due date
+    //         const twentyFourHoursAfterDueDate = new Date(schedule.nextDueDate);
+    //         twentyFourHoursAfterDueDate.setDate(
+    //           twentyFourHoursAfterDueDate.getDate() + 1
+    //         );
+    //         if (today.getTime() === twentyFourHoursAfterDueDate.getTime()) {
+    //           // Restrict parent from creating new chores or expenses
+    //           await Parent.findByIdAndUpdate(parent._id, { canCreate: false });
+    //           const notification = await Notification.create({
+    //             recipient: {
+    //               id: parent._id,
+    //               role: "Parent",
+    //             },
+    //             recipientId: parent._id,
+    //             title: "Payment Overdue",
+    //             message:  `You have missed the payment deadline. You cannot create new chores or expenses until you complete your overdue payment.`
+    //           });
+    //           // Send restriction notification
+    //           await sendNotification(
+    //             parent.fcmToken,
+    //             notification.title,
+    //             notification.message,
+    //             { notificationId: notification._id }
+    //           );
+    //         }
+    //       }
+    //     }
+    //     return {
+    //       success: true,
+    //       message: "Notifications sent successfully",
+    //     };
+    //   }
     static async checkDuePayments() {
-        const today = new Date();
+        console.log("Checking for due payments...");
+        // const today = new Date(Date.UTC(2025, 4, 12)); test date
+        const now = new Date();
+        const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
         const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        // Find all parents with unpaid chores
-        const unpaidChores = await Chore.find({
-            status: "approved", // Only consider unpaid chores
-        }).populate("parentId");
-        // Group unpaid chores by parent
+        const yesterday = new Date(today);
+        tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        console.log("Today:", today.toISOString());
+        console.log("Tomorrow:", tomorrow.toISOString());
+        console.log("Yesterday:", yesterday.toISOString());
+        const unpaidChores = await Chore.find({ status: "approved" }).populate("parentId");
+        console.log("Unpaid chores found:", unpaidChores.length);
         const parentsWithUnpaidChores = {};
         for (const chore of unpaidChores) {
             const parentId = chore.parentId._id.toString();
@@ -288,63 +399,54 @@ class PaymentService {
             }
             parentsWithUnpaidChores[parentId].unpaidChores.push(chore);
         }
-        // Iterate through parents with unpaid chores
         for (const parentId in parentsWithUnpaidChores) {
-            const { parent, unpaidChores } = parentsWithUnpaidChores[parentId];
-            // Find the parent's payment schedule
+            const { parent } = parentsWithUnpaidChores[parentId];
             const paymentSchedule = await PaymentSchedule.findOne({
-                parentId: parent._id,
+                parent: parent._id,
                 status: "active",
             });
-            if (paymentSchedule) {
-                // Cast paymentSchedule to 'any' to access nextDueDate
-                const schedule = paymentSchedule;
-                // Check if today is the day before the due date
-                if (schedule.nextDueDate.getTime() === tomorrow.getTime()) {
-                    // Send 24-hour reminder
-                    const notification = await Notification.create({
-                        recipient: {
-                            id: parent._id,
-                            role: "Parent",
-                        },
-                        recipientId: parent._id,
-                        title: "Payment Reminder",
-                        message: `Reminder: You have unpaid chores. Payment is due tomorrow.`
-                    });
-                    await sendNotification(parent.fcmToken, notification.title, notification.message, { notificationId: notification._id });
-                }
-                // Check if today is the due date
-                if (schedule.nextDueDate.getTime() === today.getTime()) {
-                    // Send due date notification
-                    const notification = await Notification.create({
-                        recipient: {
-                            id: parent._id,
-                            role: "Parent",
-                        },
-                        recipientId: parent._id,
-                        title: "Payment Due",
-                        message: `Reminder: You have unpaid chores. Payment is due today.`
-                    });
-                    await sendNotification(parent.fcmToken, notification.title, notification.message, { notificationId: notification._id });
-                }
-                // Check if today is 24 hours after the due date
-                const twentyFourHoursAfterDueDate = new Date(schedule.nextDueDate);
-                twentyFourHoursAfterDueDate.setDate(twentyFourHoursAfterDueDate.getDate() + 1);
-                if (today.getTime() === twentyFourHoursAfterDueDate.getTime()) {
-                    // Restrict parent from creating new chores or expenses
-                    await Parent.findByIdAndUpdate(parent._id, { canCreate: false });
-                    const notification = await Notification.create({
-                        recipient: {
-                            id: parent._id,
-                            role: "Parent",
-                        },
-                        recipientId: parent._id,
-                        title: "Payment Overdue",
-                        message: `You have missed the payment deadline. You cannot create new chores or expenses until you complete your overdue payment.`
-                    });
-                    // Send restriction notification
-                    await sendNotification(parent.fcmToken, notification.title, notification.message, { notificationId: notification._id });
-                }
+            if (!paymentSchedule)
+                continue;
+            const nextDueDate = new Date(paymentSchedule.nextDueDate);
+            nextDueDate.setUTCHours(0, 0, 0, 0);
+            if (nextDueDate.getTime() === tomorrow.getTime()) {
+                const notification = await Notification.create({
+                    recipient: { id: parent._id, role: "Parent" },
+                    recipientId: parent._id,
+                    title: "Payment Reminder",
+                    message: "Reminder: You have unpaid chores. Payment is due tomorrow.",
+                });
+                console.log("Reminder before due date");
+                await sendNotification(parent.fcmToken, notification.title, notification.message, {
+                    notificationId: notification._id,
+                });
+            }
+            if (nextDueDate.getTime() === today.getTime()) {
+                const notification = await Notification.create({
+                    recipient: { id: parent._id, role: "Parent" },
+                    recipientId: parent._id,
+                    title: "Payment Due",
+                    message: "Reminder: You have unpaid chores. Payment is due today.",
+                });
+                console.log("Reminder on due date");
+                await sendNotification(parent.fcmToken, notification.title, notification.message, {
+                    notificationId: notification._id,
+                });
+            }
+            // const afterDue = new Date(nextDueDate);
+            // afterDue.setUTCDate(afterDue.getUTCDate() + 1);
+            if (today.getTime() > nextDueDate.getTime()) {
+                await Parent.findByIdAndUpdate(parent._id, { canCreate: false });
+                const notification = await Notification.create({
+                    recipient: { id: parent._id, role: "Parent" },
+                    recipientId: parent._id,
+                    title: "Payment Overdue",
+                    message: "You missed the payment deadline. You can't create chores or expenses until you pay.",
+                });
+                console.log("Reminder for overdue date");
+                await sendNotification(parent.fcmToken, notification.title, notification.message, {
+                    notificationId: notification._id,
+                });
             }
         }
         return {
