@@ -197,6 +197,7 @@ class SavingService {
                     saving.nextDueDate = SavingUtils.calculateNextDueDate(lastPaymentDate, saving.schedule);
                     await saving.save();
                     console.log(`Sent reminder for saving ${saving._id}, next due: ${saving.nextDueDate}`);
+                    return true;
                 }
             }
             catch (error) {

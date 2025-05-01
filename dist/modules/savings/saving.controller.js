@@ -114,7 +114,11 @@ class SavingController {
         return;
     });
     static TriggerSavingsReminders = asyncHandler(async (req, res) => {
-        if (req.headers["x-cron-secret"] !== CRON_SECRET) {
+        const incomingSecret = req.headers['x-cron-secret'];
+
+        console.log('Received secret:', incomingSecret);
+
+        if (incomingSecret !== CRON_SECRET) {
             console.warn("Unauthorized cron attempt");
             res.status(status_codes.HTTP_401_UNAUTHORIZED).json({ success: false });
             return;

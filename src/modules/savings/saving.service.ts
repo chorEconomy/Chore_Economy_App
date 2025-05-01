@@ -301,6 +301,7 @@ class SavingService {
                     await saving.save();
 
                     console.log(`Sent reminder for saving ${saving._id}, next due: ${saving.nextDueDate}`);
+                    return true;
                 }
             } catch (error) {
                 console.error(`Error processing saving ${saving._id}:`, error);
