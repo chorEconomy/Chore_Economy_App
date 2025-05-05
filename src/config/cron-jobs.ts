@@ -15,13 +15,13 @@ const JOBS = [
   {
     name: 'Savings Reminders',
     endpoint: '/savings/savings-reminders',
-    schedule: '0 12 * * *',
+    schedule: '0 0 * * *',
     logPrefix: 'Savings'
   },
   {
     name: 'Payment Checker',
     endpoint: '/payments/check-due-payments',
-    schedule: '0 12 * * *',
+    schedule: '0 0 * * *',
     logPrefix: 'Payments'
   }
 ];

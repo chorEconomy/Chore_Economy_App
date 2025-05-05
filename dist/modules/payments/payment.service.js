@@ -376,7 +376,7 @@ class PaymentService {
     //   }
     static async checkDuePayments() {
         console.log("Checking for due payments...");
-        // const today = new Date(Date.UTC(2025, 4, 12)); test date
+        // const today = new Date(Date.UTC(2025, 4, 15));
         const now = new Date();
         const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
         const tomorrow = new Date(today);

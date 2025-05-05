@@ -5,7 +5,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Configuration
 const API_BASE_URL = 'https://chore-economy-app.onrender.com/api/v1';
-// const API_BASE_URL = 'http://localhost:5000/api/v1';
 const CRON_SECRET = process.env.CRON_SECRET_KEY || 'your-secret-key-here';
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000;
@@ -14,13 +13,13 @@ const JOBS = [
     {
         name: 'Savings Reminders',
         endpoint: '/savings/savings-reminders',
-        schedule: '0 9 * * *',
+        schedule: '0 0 * * *',
         logPrefix: 'Savings'
     },
     {
         name: 'Payment Checker',
         endpoint: '/payments/check-due-payments',
-        schedule: '0 12 * * *',
+        schedule: '0 0 * * *',
         logPrefix: 'Payments'
     }
 ];
