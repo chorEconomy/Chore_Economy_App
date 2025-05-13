@@ -17,7 +17,7 @@ export class AuthService {
         const existingParent = await Parent.findOne({ email: registerData.email });
         if (existingParent) {
             throw new Error('Parent with this email already exists');
-        }
+        } 
         const verificationToken = generateOTP();
         const newParent = new Parent({
             firstName: registerData.first_name,
