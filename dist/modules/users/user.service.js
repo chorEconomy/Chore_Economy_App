@@ -1,7 +1,8 @@
+import crypto from 'crypto';
 import { check_if_user_exist_with_email, check_if_user_exists, } from "../../utils/check_user_exists.utils.js";
-import { generateOTP, generateResetOtp, checkOtpRateLimit } from "../../utils/otp.utils.js";
+import { generateOTP, generateResetOtp, checkOtpRateLimit, } from "../../utils/otp.utils.js";
 import { Admin, Kid, Parent } from "./user.model.js";
-import { sendVerificationEmail, sendWelcomeEmail, sendResetEmail } from "../../utils/email_sender.utils.js";
+import { sendVerificationEmail, sendWelcomeEmail, sendResetEmail, } from "../../utils/email_sender.utils.js";
 import { EGender, ERole, EStatus } from "../../models/enums.js";
 import { status_codes } from "../../utils/status_constants.js";
 import { generateTokens, verifyRefreshTokenAndIssueNewAccessToken, } from "../../utils/token_management.js";
@@ -10,14 +11,14 @@ import comparePassword from "../../utils/compare_password.js";
 import { uploadSingleFile } from "../../utils/file_upload.utils.js";
 import bcrypt from "bcrypt";
 import { SavingsWallet, Wallet } from "../wallets/wallet.model.js";
-import { BadRequestError, NotFoundError, UnauthorizedError, UnprocessableEntityError } from "../../models/errors.js";
-const OTP_EXPIRY_MINUTES = parseInt(process.env.OTP_EXPIRY_MINUTES || '5');
+import { BadRequestError, NotFoundError, UnauthorizedError, UnprocessableEntityError, } from "../../models/errors.js";
+const OTP_EXPIRY_MINUTES = parseInt(process.env.OTP_EXPIRY_MINUTES || "5");
 export class AuthService {
     static async registerParent(registerData, imageUrl) {
         const existingParent = await Parent.findOne({ email: registerData.email });
         if (existingParent) {
-            throw new Error('Parent with this email already exists');
-        } 
+            throw new Error("Parent with this email already exists");
+        }
         const verificationToken = generateOTP();
         const newParent = new Parent({
             firstName: registerData.first_name,
@@ -59,7 +60,7 @@ export class AuthService {
         return parent;
     }
     static async verifyPasswordResetOTP(email, otp, userType) {
-        const Model = userType === 'parent' ? Parent : Admin;
+        const Model = userType === "parent" ? Parent : Admin;
         const user = await Model.findOne({
             email,
             verificationToken: otp,
@@ -76,12 +77,12 @@ export class AuthService {
     }
     static async resetPassword(email, newPassword, userType) {
         if (!email || !newPassword) {
-            throw new BadRequestError('Email and new password are required');
+            throw new BadRequestError("Email and new password are required");
         }
-        const Model = userType === 'parent' ? Parent : Admin;
+        const Model = userType === "parent" ? Parent : Admin;
         const user = await Model.findOne({ email: email });
         if (!user) {
-            throw new NotFoundError('User not found');
+            throw new NotFoundError("User not found");
         }
         // Hash and update password
         user.password = newPassword;
@@ -93,45 +94,45 @@ export class AuthService {
     }
     static async refreshToken(refreshToken) {
         if (!refreshToken) {
-            throw new BadRequestError('Refresh token is required');
+            throw new BadRequestError("Refresh token is required");
         }
         try {
             return await verifyRefreshTokenAndIssueNewAccessToken(refreshToken);
         }
         catch (error) {
-            throw new Error('Internal server error during token refresh');
+            throw new Error("Internal server error during token refresh");
         }
     }
     static async resendOTP(email) {
         if (!email) {
-            throw new Error('Email is required');
+            throw new Error("Email is required");
         }
         const user = await check_if_user_exist_with_email(email);
         if (!user) {
-            throw new Error('User with this email not found');
+            throw new Error("User with this email not found");
         }
         const verificationToken = generateOTP();
         const verificationTokenExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
         user.verificationToken = verificationToken;
         user.verificationTokenExpiresAt = verificationTokenExpiresAt;
         await user.save();
-        sendVerificationEmail(user.email, user.firstName || user.fullName || 'User', verificationToken);
+        sendVerificationEmail(user.email, user.firstName || user.fullName || "User", verificationToken);
         return { email };
     }
     static async loginParent(email, password, fcmToken, role = ERole.Parent) {
         // Input validation
         if (!email || !password) {
-            throw new UnprocessableEntityError('Email and password are required');
+            throw new UnprocessableEntityError("Email and password are required");
         }
         // Find parent with role validation
         const parent = await Parent.findOne({ email, role });
         if (!parent) {
-            throw new BadRequestError('Invalid credentials');
+            throw new BadRequestError("Invalid credentials");
         }
         // Password verification
         const isPasswordValid = await comparePassword(password, parent.password);
         if (!isPasswordValid) {
-            throw new BadRequestError('Invalid credentials');
+            throw new BadRequestError("Invalid credentials");
         }
         // Device management (single device login)
         if (parent.fcmToken) {
@@ -147,7 +148,7 @@ export class AuthService {
         }
         return {
             tokens,
-            parent: { ...parent.toObject(), password: undefined }
+            parent: { ...parent.toObject(), password: undefined },
         };
     }
     static async logout(userId, refreshToken) {
@@ -155,14 +156,14 @@ export class AuthService {
         // Verify user exists
         const user = await check_if_user_exists(userId);
         if (!user) {
-            throw new UnauthorizedError('Unauthorized access');
+            throw new UnauthorizedError("Unauthorized access");
         }
         // Delete refresh token
         const deletedToken = await RefreshToken.findOneAndDelete({
-            refreshToken: refreshToken
+            refreshToken: refreshToken,
         });
         if (!deletedToken) {
-            throw new Error('Refresh token not found');
+            throw new Error("Refresh token not found");
         }
         // Clear FCM token
         user.fcmToken = null;
@@ -172,7 +173,7 @@ export class AuthService {
     static async initiatePasswordReset(email) {
         const user = await check_if_user_exist_with_email(email);
         if (!user)
-            throw new Error('Account not found with this email');
+            throw new Error("Account not found with this email");
         checkOtpRateLimit(user);
         const { otp, expiresAt } = generateResetOtp();
         user.verificationToken = otp;
@@ -182,7 +183,7 @@ export class AuthService {
         sendResetEmail(user, otp);
         return {
             email,
-            expiresInMinutes: OTP_EXPIRY_MINUTES
+            expiresInMinutes: OTP_EXPIRY_MINUTES,
         };
     }
     static async editProfile(parentId, updateData, file) {
@@ -198,16 +199,18 @@ export class AuthService {
             imageUrl = result?.secure_url || existingParent.photo;
         }
         // Update parent data
-        existingParent.firstName = updateData.first_name ?? existingParent.firstName;
+        existingParent.firstName =
+            updateData.first_name ?? existingParent.firstName;
         existingParent.lastName = updateData.last_name ?? existingParent.lastName;
         existingParent.photo = imageUrl;
-        existingParent.phoneNumber = updateData.phone_number ?? existingParent.phoneNumber;
+        existingParent.phoneNumber =
+            updateData.phone_number ?? existingParent.phoneNumber;
         existingParent.gender = updateData.gender ?? existingParent.gender;
         existingParent.country = updateData.country ?? existingParent.country;
         await existingParent.save();
         return {
             ...existingParent.toObject(),
-            password: undefined
+            password: undefined,
         };
     }
     static async CreateKidProfile(req, res) {
@@ -414,9 +417,7 @@ export class AuthService {
     static async FetchParent(req, res) {
         try {
             if (!req.params) {
-                return res
-                    .status(status_codes.HTTP_400_BAD_REQUEST)
-                    .json({
+                return res.status(status_codes.HTTP_400_BAD_REQUEST).json({
                     status: 400,
                     success: false,
                     message: "Please provide a valid Id",
@@ -425,9 +426,7 @@ export class AuthService {
             const { id } = req.params;
             const user = await Parent.findById(id);
             if (!user) {
-                return res
-                    .status(status_codes.HTTP_404_NOT_FOUND)
-                    .json({
+                return res.status(status_codes.HTTP_404_NOT_FOUND).json({
                     status: 404,
                     success: false,
                     message: "Parent's profile not found",
@@ -463,9 +462,7 @@ export class AuthService {
         try {
             const parent = await Parent.findById(req.user);
             if (!parent) {
-                return res
-                    .status(status_codes.HTTP_401_UNAUTHORIZED)
-                    .json({
+                return res.status(status_codes.HTTP_401_UNAUTHORIZED).json({
                     status: 401,
                     success: false,
                     message: "Unauthorized access!",
@@ -473,9 +470,7 @@ export class AuthService {
             }
             const kids = await Kid.find({ parentId: parent._id });
             if (!kids || kids.length == 0) {
-                return res
-                    .status(status_codes.HTTP_404_NOT_FOUND)
-                    .json({
+                return res.status(status_codes.HTTP_404_NOT_FOUND).json({
                     status: 404,
                     success: false,
                     message: "Kids' profiles not found",
@@ -545,7 +540,7 @@ export class AuthService {
         const newAdmin = new Admin({
             fullName,
             email,
-            password
+            password,
         });
         await newAdmin.save();
         return { ...newAdmin.toObject(), password: undefined };
@@ -592,7 +587,7 @@ export class AuthService {
                 Parent.countDocuments({ gender: EGender.Male }),
                 Parent.countDocuments({ gender: EGender.Female }),
                 Kid.countDocuments({ gender: EGender.Male }),
-                Kid.countDocuments({ gender: EGender.Female })
+                Kid.countDocuments({ gender: EGender.Female }),
             ]);
             const maleStats = maleParents + maleKids;
             const femaleStats = femaleParents + femaleKids;
@@ -602,13 +597,13 @@ export class AuthService {
                 return {
                     men: "0.00",
                     women: "0.00",
-                    note: "No records found in database"
+                    note: "No records found in database",
                 };
             }
             // Format percentages with 2 decimal places
             return {
-                men: (maleStats / totalStats * 100).toFixed(2),
-                women: (femaleStats / totalStats * 100).toFixed(2),
+                men: ((maleStats / totalStats) * 100).toFixed(2),
+                women: ((femaleStats / totalStats) * 100).toFixed(2),
             };
         }
         catch (error) {
@@ -629,16 +624,16 @@ export class AuthService {
             const kidsCount = await Kid.countDocuments({ parentId: parent._id });
             return {
                 ...parent,
-                createdAt: new Date(parent.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
+                createdAt: new Date(parent.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
                 }),
-                kidsCount
+                kidsCount,
             };
         }));
         // Format response
-        const formattedParents = parentsWithKidsCount.map(parent => ({
+        const formattedParents = parentsWithKidsCount.map((parent) => ({
             parentId: parent._id,
             fullName: parent.fullName,
             email: parent.email,
@@ -646,7 +641,7 @@ export class AuthService {
             gender: parent.gender,
             createdAt: parent.createdAt,
             status: parent.status,
-            kidsCount: parent.kidsCount
+            kidsCount: parent.kidsCount,
         }));
         // Return paginated response
         return {
@@ -655,8 +650,8 @@ export class AuthService {
                 currentPage: page,
                 totalPages: Math.ceil(totalParents / limit),
                 totalItems: totalParents,
-                itemsPerPage: limit
-            }
+                itemsPerPage: limit,
+            },
         };
     }
     static async fetchKidsForParent(parentId) {
@@ -666,5 +661,59 @@ export class AuthService {
         }
         const kids = await Kid.find({ parentId: parentId });
         return kids;
+    }
+    static async registerBiometric(userId, publicKey) {
+        if (!publicKey) {
+            throw new BadRequestError("Public key is required for biometric registration");
+        }
+        const parent = await Parent.findById(userId);
+        if (!parent) {
+            throw new NotFoundError("Parent not found");
+        }
+        else {
+            parent.biometricKey = publicKey;
+            await parent.save();
+        }
+        const kid = await Kid.findById(userId);
+        if (!kid) {
+            throw new NotFoundError("Kid not found");
+        }
+        else {
+            kid.biometricKey = publicKey;
+            await kid.save();
+        }
+        return { success: true, message: "Biometric registration successful" };
+    }
+    static async verifyBiometric(userId, challenge, signature) {
+        if (!userId || !challenge || !signature) {
+            throw new BadRequestError("UserId, Challenge and signature are required for biometric verification");
+        }
+        const parent = await Parent.findById(userId);
+        if (parent && parent.biometricKey) {
+            const isVerified = crypto.verify("sha256", Buffer.from(challenge, "base64"), {
+                key: parent.biometricKey,
+                padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+            }, Buffer.from(signature, "base64"));
+            if (isVerified) {
+                return { success: true, message: "Biometric verification successful" };
+            }
+            else {
+                throw new UnauthorizedError("Biometric verification failed");
+            }
+        }
+        const kid = await Kid.findById(userId);
+        if (kid && kid.biometricKey) {
+            const isVerified = crypto.verify("sha256", Buffer.from(challenge, "base64"), {
+                key: kid.biometricKey,
+                padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+            }, Buffer.from(signature, "base64"));
+            if (isVerified) {
+                return { success: true, message: "Biometric verification successful" };
+            }
+            else {
+                throw new UnauthorizedError("Biometric verification failed");
+            }
+        }
+        throw new NotFoundError("User not found or biometric key not registered");
     }
 }

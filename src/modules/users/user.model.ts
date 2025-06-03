@@ -19,6 +19,7 @@ export interface IParent extends Document {
   status: EStatus;
   verificationToken: string
   lastOtpRequest: Date
+  biometricKey?: string; 
   verificationTokenExpiresAt: Date
   lastLogin: Date
   createdAt: Date;
@@ -31,6 +32,7 @@ interface IKid extends Document {
   password: string;
   role: ERole;
   gender: EGender;
+  biometricKey?: string; 
   fcmToken: string;
   
   photo?: string; // Optional field
@@ -61,6 +63,7 @@ const parentSchema: Schema = new Schema<IParent>(
     phoneNumber: { type: String, required: [true, 'Phone number is a required field'], unique: true },
     isVerified: { type: Boolean, default: false },
     fcmToken: { type: String, default: null },
+    biometricKey: { type: String, default: null },
     canCreate: { type: Boolean, default: true },
     verificationToken: String,
     verificationTokenExpiresAt: Date,
@@ -81,6 +84,7 @@ const kidSchema = new Schema<IKid>(
     name: { type: String, required: true, trim: true },
     password: { type: String, required: true },
     photo: { type: String, default: null },
+    biometricKey: { type: String, default: null },
     role: { type: String, enum: Object.values(ERole), default: ERole.Kid },
     fcmToken: { type: String, default: null },
     gender: { type: String, enum: Object.values(EGender), required: [true, 'Gender is a required field'] },

@@ -435,6 +435,42 @@ class UserController {
      }
   )
 
+  static registerBiometricKey = asyncHandler(
+    async (req: Request, res: Response) => {
+      const { userId, biometricKey } = req.body;
+
+      if (!userId || !biometricKey) {
+        throw new BadRequestError("Kid ID and biometric key are required");
+      }
+
+      const result = await AuthService.registerBiometric(userId, biometricKey);
+
+      res.status(status_codes.HTTP_200_OK).json({
+        status: 200,
+        success: result.success,
+        message: result.message
+      });
+      return;
+    })
+  
+  static VerifyBiometricKey = asyncHandler(
+    async (req: Request, res: Response) => {
+      const { userId, challenge, signature } = req.body;
+
+      if (!userId || !challenge || !signature) {
+        throw new BadRequestError("User ID and biometric key are required");
+      }
+
+      const isVerified = await AuthService.verifyBiometric(userId, challenge, signature);
+
+      res.status(status_codes.HTTP_200_OK).json({
+        status: 200,
+        success: true,
+        message: isVerified ? "Biometric key verified successfully" : "Biometric key verification failed",
+      });
+      return;
+    }
+  )
 }
 
 export default UserController;
