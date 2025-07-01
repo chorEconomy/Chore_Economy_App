@@ -18,13 +18,14 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"] // Allowed headers
 }));
 app.use(express.json({
+    limit: "50mb",
     verify: (req, res, buf) => {
         if (req.originalUrl.startsWith('/api/v1/payments/stripe-webhook')) {
             req.rawBody = buf.toString('utf8');
         }
     }
 }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 //====== routes for application========//
 app.get("/api/v1/home", (req, res) => {
     res.status(status_codes.HTTP_200_OK).json({
