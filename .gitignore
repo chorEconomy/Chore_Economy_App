@@ -2,3 +2,4 @@ node_modules/
 .env
 fcm-notification.json
 notitificaion.message.ts
+chore_economy_api_ec2.pem
