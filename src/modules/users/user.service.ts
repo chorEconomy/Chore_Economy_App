@@ -164,7 +164,8 @@ export class AuthService {
     try {
       return await verifyRefreshTokenAndIssueNewAccessToken(refreshToken);
     } catch (error: any) {
-      throw new Error("Internal server error during token refresh");
+      console.error("Token refresh error:", error.message);
+      throw new Error(error.message);
     }
   }
 

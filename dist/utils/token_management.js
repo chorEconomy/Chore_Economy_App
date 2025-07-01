@@ -54,8 +54,10 @@ async function verifyRefreshTokenAndIssueNewAccessToken(refreshToken) {
     const ACCESS_SECRET = process.env.ACCESS_SECRET;
     try {
         const decoded = jwt.verify(refreshToken, REFRESH_SECRET);
+        console.log('Decoded Refresh Token:', decoded);
         // Find the refresh token that matches the given token and userId
         const previousToken = await RefreshToken.findOne({ userId: decoded.sub, refreshToken });
+        console.log('Previous Token:', previousToken);
         if (!previousToken) {
             throw new Error('Refresh token not found or already used');
         }
@@ -63,7 +65,9 @@ async function verifyRefreshTokenAndIssueNewAccessToken(refreshToken) {
         await RefreshToken.deleteOne({ userId: decoded.sub, refreshToken });
         // Generate new access and refresh tokens
         const newAccessToken = jwt.sign({ sub: decoded.sub }, ACCESS_SECRET, { expiresIn: '15m' });
+        console.log('New Access Token:', newAccessToken);
         const newRefreshToken = jwt.sign({ sub: decoded.sub }, REFRESH_SECRET, { expiresIn: '3d' });
+        console.log('New Refresh Token:', newRefreshToken);
         // Store the new refresh token in MongoDB
         await storeRefreshToken(decoded.sub, newRefreshToken);
         return { newAccessToken, newRefreshToken };
