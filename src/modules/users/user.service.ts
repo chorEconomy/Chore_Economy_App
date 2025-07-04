@@ -157,17 +157,20 @@ export class AuthService {
 
     return { success: true };
   }
+
   static async refreshToken(refreshToken: string) {
-    if (!refreshToken) {
-      throw new BadRequestError("Refresh token is required");
-    }
-    try {
-      return await verifyRefreshTokenAndIssueNewAccessToken(refreshToken);
-    } catch (error: any) {
-      console.error("Token refresh error:", error.message);
-      throw new Error(error.message);
-    }
+  if (!refreshToken) {
+    throw new BadRequestError("Refresh token is required");
   }
+
+  try {
+    const tokens = await verifyRefreshTokenAndIssueNewAccessToken(refreshToken);
+    return tokens;
+  } catch (error: any) {
+    console.error("Refresh token error:", error.message);
+    throw new UnauthorizedError("Token invalid or expired. Please login again.");
+  }
+}
 
   static async resendOTP(email: string) {
     if (!email) {

@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 dotenv.config()
 
 
-async function storeRefreshToken(userId: string, refreshToken: string) {
+async function storeRefreshToken(userId: any, refreshToken: string) {
     try {
         await RefreshToken.findOneAndUpdate(
             { userId }, // Find by user ID
@@ -63,33 +63,40 @@ function decode_token(token: string) {
 }
 
 async function verifyRefreshTokenAndIssueNewAccessToken(refreshToken: string) {
-    const REFRESH_SECRET: any = process.env.REFRESH_SECRET;
-    const ACCESS_SECRET: any = process.env.ACCESS_SECRET;
+  const REFRESH_SECRET: any = process.env.REFRESH_SECRET;
+  const ACCESS_SECRET: any = process.env.ACCESS_SECRET;
 
-    try {
-        const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as { sub: string };
+  try {
+    const decoded: any = jwt.verify(refreshToken, REFRESH_SECRET);
+    console.log('Decoded Refresh Token:', decoded);
 
-        // Find the refresh token that matches the given token and userId
-        const previousToken = await RefreshToken.findOne({ userId: decoded.sub, refreshToken });
+    // Check if token exists in DB (and hasn’t been used yet)
+    const previousToken = await RefreshToken.findOne({ userId: decoded.sub, refreshToken });
 
-        if (!previousToken) {
-            throw new Error('Refresh token not found or already used');
-        }
-
-        // **Delete the used refresh token** to prevent reuse
-        await RefreshToken.deleteOne({ userId: decoded.sub, refreshToken });
-
-        // Generate new access and refresh tokens
-        const newAccessToken = jwt.sign({ sub: decoded.sub }, ACCESS_SECRET, { expiresIn: '15m' });
-        const newRefreshToken = jwt.sign({ sub: decoded.sub }, REFRESH_SECRET, { expiresIn: '3d' });
-
-        // Store the new refresh token in MongoDB
-        await storeRefreshToken(decoded.sub, newRefreshToken);
-
-        return { newAccessToken, newRefreshToken };
-    } catch (error) {
-        throw new Error('Invalid or expired refresh token');
+    if (!previousToken) {
+      throw new Error('Refresh token not found or already used');
     }
+
+    // Delete old refresh token (single-use)
+    await RefreshToken.deleteOne({ userId: decoded.sub, refreshToken });
+
+    // Generate new tokens
+    const newAccessToken = jwt.sign({ sub: decoded.sub }, ACCESS_SECRET, { expiresIn: '15m' });
+    const newRefreshToken = jwt.sign({ sub: decoded.sub }, REFRESH_SECRET, { expiresIn: '3d' });
+
+    // Store new refresh token in DB
+    await storeRefreshToken(decoded.sub, newRefreshToken);
+
+    return {
+      newAccessToken,
+      newRefreshToken,
+    };
+
+  } catch (error: any) {
+    console.error('Token refresh error:', error.message);
+    throw new Error('Invalid or expired refresh token');
+  }
 }
+
 
 export { decode_token, generateTokens, generate_reset_token, verifyRefreshTokenAndIssueNewAccessToken };

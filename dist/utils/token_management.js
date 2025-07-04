@@ -20,7 +20,7 @@ async function generateTokens(user) {
     if (!user || !ACCESS_SECRET || !REFRESH_SECRET) {
         throw new Error("Unable to generate tokens");
     }
-    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "15m" });
+    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "2m" });
     const refresh_token = jwt.sign({ sub: user._id }, REFRESH_SECRET, { expiresIn: "3d" });
     // Update the user's last login time
     await user.updateOne({ lastLogin: new Date() });
@@ -32,7 +32,7 @@ async function generate_reset_token(user) {
     if (!user || !ACCESS_SECRET) {
         throw new Error("Unable to generate token");
     }
-    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "15m" });
+    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "2m" });
     return access_token;
 }
 function decode_token(token) {
@@ -55,24 +55,25 @@ async function verifyRefreshTokenAndIssueNewAccessToken(refreshToken) {
     try {
         const decoded = jwt.verify(refreshToken, REFRESH_SECRET);
         console.log('Decoded Refresh Token:', decoded);
-        // Find the refresh token that matches the given token and userId
+        // Check if token exists in DB (and hasn’t been used yet)
         const previousToken = await RefreshToken.findOne({ userId: decoded.sub, refreshToken });
-        console.log('Previous Token:', previousToken);
         if (!previousToken) {
             throw new Error('Refresh token not found or already used');
         }
-        // **Delete the used refresh token** to prevent reuse
+        // Delete old refresh token (single-use)
         await RefreshToken.deleteOne({ userId: decoded.sub, refreshToken });
-        // Generate new access and refresh tokens
+        // Generate new tokens
         const newAccessToken = jwt.sign({ sub: decoded.sub }, ACCESS_SECRET, { expiresIn: '15m' });
-        console.log('New Access Token:', newAccessToken);
         const newRefreshToken = jwt.sign({ sub: decoded.sub }, REFRESH_SECRET, { expiresIn: '3d' });
-        console.log('New Refresh Token:', newRefreshToken);
-        // Store the new refresh token in MongoDB
+        // Store new refresh token in DB
         await storeRefreshToken(decoded.sub, newRefreshToken);
-        return { newAccessToken, newRefreshToken };
+        return {
+            newAccessToken,
+            newRefreshToken,
+        };
     }
     catch (error) {
+        console.error('Token refresh error:', error.message);
         throw new Error('Invalid or expired refresh token');
     }
 }
