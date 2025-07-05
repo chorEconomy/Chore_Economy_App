@@ -17,7 +17,7 @@ import {
   sendVerificationEmail,
   sendWelcomeEmail,
   sendResetEmail,
-} from "../../utils/email_sender.utils";
+} from "../../utils/email_sender.utils.js";
 import { EGender, ERole, EStatus } from "../../models/enums.js";
 import { status_codes } from "../../utils/status_constants.js";
 import {

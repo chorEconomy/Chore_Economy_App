@@ -1,4 +1,4 @@
-import { BadRequestError } from "../models/errors";
+import { BadRequestError } from "../models/errors.js";
 
 export function validateRequiredFields(fields: Record<string, any>, context?: string) {
     const missing = Object.entries(fields)

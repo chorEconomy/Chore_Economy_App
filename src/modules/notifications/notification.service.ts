@@ -1,6 +1,6 @@
-import { ERole } from "../../models/enums";
-import { BadRequestError, NotFoundError } from "../../models/errors";
-import { Notification } from "./notification.model";
+import { ERole } from "../../models/enums.js";
+import { BadRequestError, NotFoundError } from "../../models/errors.js";
+import { Notification } from "./notification.model.js";
 
 class NotificationService {
     static async fetchNotifications(userId: any) {
