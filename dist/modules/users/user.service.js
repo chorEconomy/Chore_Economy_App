@@ -194,22 +194,49 @@ export class AuthService {
         if (!existingParent) {
             throw new Error(`Parent with the id: ${parentId} not found`);
         }
+        // Filter out undefined, null, and empty string values
+        const filteredUpdateData = Object.entries(updateData).reduce((acc, [key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                acc[key] = value;
+            }
+            return acc;
+        }, {});
         // Handle file upload if provided
-        let imageUrl = "";
         if (file) {
-            const result = await uploadSingleFile(file);
-            imageUrl = result?.secure_url || existingParent.photo;
+            try {
+                const result = await uploadSingleFile(file);
+                if (result?.secure_url) {
+                    existingParent.photo = result.secure_url;
+                }
+            }
+            catch (error) {
+                console.error('File upload failed:', error);
+                throw new Error('Failed to upload profile photo');
+            }
         }
-        // Update parent data
-        existingParent.firstName =
-            updateData.first_name ?? existingParent.firstName;
-        existingParent.lastName = updateData.last_name ?? existingParent.lastName;
-        existingParent.photo = imageUrl;
-        existingParent.phoneNumber =
-            updateData.phone_number ?? existingParent.phoneNumber;
-        existingParent.gender = updateData.gender ?? existingParent.gender;
-        existingParent.country = updateData.country ?? existingParent.country;
-        await existingParent.save();
+        let nameChanged = false;
+        // Update fields (fullName will be auto-updated by pre-save hook)
+        if (filteredUpdateData.first_name?.trim()) {
+            existingParent.firstName = filteredUpdateData.first_name.trim();
+            nameChanged = true;
+        }
+        if (filteredUpdateData.last_name?.trim()) {
+            existingParent.lastName = filteredUpdateData.last_name.trim();
+            nameChanged = true;
+        }
+        if (filteredUpdateData.phone_number) {
+            existingParent.phoneNumber = filteredUpdateData.phone_number;
+        }
+        if (filteredUpdateData.gender) {
+            existingParent.gender = filteredUpdateData.gender;
+        }
+        if (filteredUpdateData.country) {
+            existingParent.country = filteredUpdateData.country;
+        }
+        if (nameChanged) {
+            existingParent.fullName = `${existingParent.firstName} ${existingParent.lastName}`.trim();
+        }
+        await existingParent.save(); // Pre-save hook will handle fullName update
         return {
             ...existingParent.toObject(),
             password: undefined,
