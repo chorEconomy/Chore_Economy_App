@@ -327,17 +327,13 @@ static async editProfile(
         throw new Error('Failed to upload profile photo');
       }
     }
-
-    let nameChanged = false;
   
     // Update fields (fullName will be auto-updated by pre-save hook)
     if (filteredUpdateData.first_name?.trim()) {
       existingParent.firstName = filteredUpdateData.first_name.trim();
-      nameChanged = true;
     }
     if (filteredUpdateData.last_name?.trim()) {
       existingParent.lastName = filteredUpdateData.last_name.trim();
-      nameChanged = true;
     }
     if (filteredUpdateData.phone_number) {
       existingParent.phoneNumber = filteredUpdateData.phone_number;
@@ -348,10 +344,7 @@ static async editProfile(
     if (filteredUpdateData.country) {
       existingParent.country = filteredUpdateData.country;
   }
-  
-   if (nameChanged) {
-    existingParent.fullName = `${existingParent.firstName} ${existingParent.lastName}`.trim();
-  }
+   
 
   
     await existingParent.save(); // Pre-save hook will handle fullName update
@@ -362,6 +355,8 @@ static async editProfile(
     };
   }
 
+
+  
   static async CreateKidProfile(req: Request, res: Response) {
     try {
       if (!req.body) {

@@ -94,6 +94,10 @@ parentSchema.pre("save", async function (next) {
         next(error); // Pass any error to the next middleware
     }
 });
+parentSchema.pre("save", function (next) {
+    this.fullName = `${this.firstName} ${this.lastName}`.trim();
+    next();
+});
 const adminSchema = new Schema({
     fullName: { type: String, required: true },
     email: { type: String, required: true, unique: true },

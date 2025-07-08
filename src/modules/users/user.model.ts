@@ -154,6 +154,11 @@ parentSchema.pre("save", async function (next) {
   }
 });
 
+parentSchema.pre("save", function (next) {
+  this.fullName = `${this.firstName} ${this.lastName}`.trim();
+  next();
+});
+
 const adminSchema = new Schema<IAdmin>(
   {
     fullName: { type: String, required: true },
