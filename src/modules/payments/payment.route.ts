@@ -9,7 +9,7 @@ const paymentRouter = express.Router();
 paymentRouter.get("/kids/:kidId", authorizeParent, PaymentController.GetPaymentDetailsForKid)
 paymentRouter.get("/check-due-payments", PaymentController.CheckOverduePayments)
 paymentRouter.post("/initiate", authorizeParent, PaymentController.InitiatePayment)
-paymentRouter.post("/stripe-webhook", express.raw({type: 'application/json'}), PaymentController.StripeWebhookHandler)
+
 paymentRouter.post("/schedule", authorizeParent, PaymentController.SchedulePayment)
 paymentRouter.post("/withdraw", authorizeKid, PaymentController.WithdrawFromWallet);
 
