@@ -72,7 +72,7 @@ class PaymentService {
             return { success: true, message: `Skipped ${event.type}` };
         }
         
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        let paymentIntent = event.data.object as Stripe.PaymentIntent;
         const { kidId, parentId } = paymentIntent.metadata || {};
         
         // 3. Validate metadata
@@ -104,7 +104,9 @@ class PaymentService {
                 await session.commitTransaction();
                 await this.sendPaymentNotification(parentId, true, amountInDollars);
                 // Commit the transaction
-                
+              
+              console.log("succeeded", paymentIntent.id)
+              
                 return { success: true };
             } catch (error) {
                 // Handle transaction errors
@@ -118,7 +120,8 @@ class PaymentService {
         } else if (event.type === 'payment_intent.payment_failed') {
             // For failed payments, just send notification (no transaction needed)
             const errorMessage = paymentIntent.last_payment_error?.message || '';
-            await this.sendPaymentNotification(parentId, false, amountInDollars, errorMessage);
+          await this.sendPaymentNotification(parentId, false, amountInDollars, errorMessage);
+          console.log("failed", paymentIntent.id, errorMessage);
             return { success: true };
         }
         

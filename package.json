@@ -21,7 +21,8 @@
     "node-cron": "^3.0.3",
     "node-mailjet": "^6.0.8",
     "resend": "^4.2.0",
-    "stripe": "^17.7.0"
+    "stripe": "^17.7.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
