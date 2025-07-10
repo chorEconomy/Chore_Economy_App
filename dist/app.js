@@ -18,12 +18,7 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"] // Allowed headers
 }));
 app.use(express.json({
-    limit: "50mb",
-    verify: (req, res, buf) => {
-        if (req.originalUrl.startsWith('/api/v1/payments/stripe-webhook')) {
-            req.rawBody = buf.toString('utf8');
-        }
-    }
+    limit: "50mb"
 }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 //====== routes for application========//

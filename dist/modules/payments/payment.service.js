@@ -48,7 +48,7 @@ class PaymentService {
                 console.log(`Skipping event: ${event.type}`);
                 return { success: true, message: `Skipped ${event.type}` };
             }
-            const paymentIntent = event.data.object;
+            let paymentIntent = event.data.object;
             const { kidId, parentId } = paymentIntent.metadata || {};
             // 3. Validate metadata
             if (!kidId || !parentId) {
@@ -73,6 +73,7 @@ class PaymentService {
                     await session.commitTransaction();
                     await this.sendPaymentNotification(parentId, true, amountInDollars);
                     // Commit the transaction
+                    console.log("succeeded", paymentIntent.id);
                     return { success: true };
                 }
                 catch (error) {
@@ -89,6 +90,7 @@ class PaymentService {
                 // For failed payments, just send notification (no transaction needed)
                 const errorMessage = paymentIntent.last_payment_error?.message || '';
                 await this.sendPaymentNotification(parentId, false, amountInDollars, errorMessage);
+                console.log("failed", paymentIntent.id, errorMessage);
                 return { success: true };
             }
             // Fallback return for typescript compiler (should never reach here)
