@@ -68,7 +68,7 @@ class PaymentController {
     const sig = req.headers['stripe-signature'];
   
     try {
-      await PaymentService.handleStripeWebhook(sig, req.body);
+      await PaymentService.handleStripeWebhook(sig, req.body as Buffer);
       res.status(200).json({ received: true });
     } catch (error: any) {
       console.error("Webhook Error:", error.message);
