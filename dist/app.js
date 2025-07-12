@@ -12,17 +12,29 @@ import { globalErrorHandler } from "./middlewares/global-error-middleware.js";
 const app = express();
 // ================== CORS ==================
 app.use(cors({
-    origin: "*",
+    origin: [
+        "https://api.chor-economy.com",
+        "https://chore-economy-app.onrender.com"
+    ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization"],
 }));
 // ================== STRIPE WEBHOOK ROUTE BEFORE express.json() ==================
 import bodyParser from "body-parser";
 import stripeWebhookRouter from "./modules/payments/stripe-webhook.route.js"; // <- separate route for stripe
-app.use("/api/v1/payments/stripe-webhook", bodyParser.raw({ type: "application/json" }), // Use raw body ONLY for this route
-stripeWebhookRouter);
+app.use("/api/v1/payments/stripe-webhook", 
+// <-- this ensures req.body is the raw Buffer that Stripe sent
+bodyParser.raw({ type: "/" }), stripeWebhookRouter);
 // ================== REST OF BODY PARSING ==================
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json({
+    limit: "50mb",
+    verify: (req, _res, buf) => {
+        // Only stash the raw body for Stripe’s webhook path
+        if (req.originalUrl === "/api/v1/payments/stripe-webhook") {
+            req.rawBody = buf;
+        }
+    }
+}));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // ================== ROUTES ==================
 app.get("/api/v1/home", (req, res) => {

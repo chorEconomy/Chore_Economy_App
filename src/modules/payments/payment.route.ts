@@ -13,5 +13,4 @@ paymentRouter.post("/initiate", authorizeParent, PaymentController.InitiatePayme
 paymentRouter.post("/schedule", authorizeParent, PaymentController.SchedulePayment)
 paymentRouter.post("/withdraw", authorizeKid, PaymentController.WithdrawFromWallet);
 
-
 export default paymentRouter

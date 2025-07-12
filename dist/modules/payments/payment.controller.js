@@ -49,9 +49,12 @@ class PaymentController {
         }
     });
     static StripeWebhookHandler = asyncHandler(async (req, res) => {
-        const sig = req.headers['stripe-signature'];
+        const sig = req.headers["stripe-signature"];
+        const rawBody = req.rawBody;
+        console.log("🔑 webhookSecret:", process.env.STRIPE_WEBHOOK_SECRET_LIVE);
+        console.log("📦 rawBody length:", rawBody.length);
         try {
-            await PaymentService.handleStripeWebhook(sig, req.body);
+            await PaymentService.handleStripeWebhook(sig, rawBody);
             res.status(200).json({ received: true });
         }
         catch (error) {
@@ -68,7 +71,7 @@ class PaymentController {
         res.status(status_codes.HTTP_200_OK).json({
             status: 200,
             success: true,
-            data: result
+            data: result,
         });
         return;
     });

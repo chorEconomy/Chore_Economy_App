@@ -16,15 +16,14 @@ class PaymentController {
         throw new UnauthorizedError("Unauthorized access");
       }
 
-      const { kidId } = req.params
+      const { kidId } = req.params;
 
       if (!kidId) {
         throw new BadRequestError("Kid ID is required");
       }
 
-      const kidsWithChores = await PaymentService.getPaymentDetailsForKid(
-        kidId
-      );
+      const kidsWithChores =
+        await PaymentService.getPaymentDetailsForKid(kidId);
 
       res.status(status_codes.HTTP_200_OK).json({
         status: 200,
@@ -64,34 +63,42 @@ class PaymentController {
     }
   });
 
- static StripeWebhookHandler = asyncHandler(async (req: any, res: Response) => {
-    const sig = req.headers['stripe-signature'];
-  
-    try {
-      await PaymentService.handleStripeWebhook(sig, req.body as Buffer);
-      res.status(200).json({ received: true });
-    } catch (error: any) {
-      console.error("Webhook Error:", error.message);
-      res.status(400).send(`Webhook Error: ${error.message}`);
-    }
-  });
+  static StripeWebhookHandler = asyncHandler(
+    async (req: any, res: Response) => {
+      const sig = req.headers["stripe-signature"] as string;
+      const rawBody = (req as any).rawBody as Buffer;
 
-   static WithdrawFromWallet = asyncHandler(async (req: Request, res: Response) => {
+      console.log("🔑 webhookSecret:", process.env.STRIPE_WEBHOOK_SECRET_LIVE);
+      console.log("📦 rawBody length:", rawBody.length);
+
+      try {
+        await PaymentService.handleStripeWebhook(sig, rawBody);
+        res.status(200).json({ received: true });
+      } catch (error: any) {
+        console.error("Webhook Error:", error.message);
+        res.status(400).send(`Webhook Error: ${error.message}`);
+      }
+    }
+  );
+
+  static WithdrawFromWallet = asyncHandler(
+    async (req: Request, res: Response) => {
       const kid: any = await Kid.findById(req.user);
-  
+
       if (!kid) {
-           throw new UnauthorizedError("Unauthorized access");
-     }
-      
+        throw new UnauthorizedError("Unauthorized access");
+      }
+
       const result = await PaymentService.withdrawMoney(kid);
 
-     res.status(status_codes.HTTP_200_OK).json({
+      res.status(status_codes.HTTP_200_OK).json({
         status: 200,
         success: true,
-        data: result
+        data: result,
       });
-      return
-    });
+      return;
+    }
+  );
 
   static SchedulePayment = asyncHandler(async (req: Request, res: Response) => {
     const parent = await Parent.findById(req.user);
@@ -112,20 +119,20 @@ class PaymentController {
 
     const start = new Date(startDate);
     const today = new Date();
-    
+
     // Validate start date format
     if (isNaN(start.getTime())) {
-        throw new BadRequestError("Invalid start date.");
+      throw new BadRequestError("Invalid start date.");
     }
-    
+
     // Compare only the calendar dates by resetting time
     start.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
-    
+
     if (start < today) {
-        throw new BadRequestError("Start date cannot be in the past.");
+      throw new BadRequestError("Start date cannot be in the past.");
     }
-    
+
     const paymentSchedule = await PaymentService.createSchedule(
       parent._id,
       scheduleType,
