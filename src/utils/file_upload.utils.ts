@@ -7,11 +7,18 @@ import cloudinary from "../config/cloudinary.config.js";
  */
 
 const uploadSingleFile = async (file: any) => {
-  if (!file) throw new Error("No file uploaded");
+  if (!file) {
+    throw new Error("No file uploaded");
+  }
+
+  if (!file.mimetype || !file.buffer) {
+    throw new Error("Invalid file format or missing file buffer");
+  }
 
   const fileBase64 = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
   return await cloudinary.uploader.upload(fileBase64, { folder: "uploads" });
 };
+
 
 /**
  * Upload multiple files to cloudinary

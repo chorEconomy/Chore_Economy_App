@@ -5,8 +5,12 @@ import cloudinary from "../config/cloudinary.config.js";
  * @returns {Promise<Object>} - Cloudinary response
  */
 const uploadSingleFile = async (file) => {
-    if (!file)
+    if (!file) {
         throw new Error("No file uploaded");
+    }
+    if (!file.mimetype || !file.buffer) {
+        throw new Error("Invalid file format or missing file buffer");
+    }
     const fileBase64 = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
     return await cloudinary.uploader.upload(fileBase64, { folder: "uploads" });
 };

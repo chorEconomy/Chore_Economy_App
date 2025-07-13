@@ -102,7 +102,7 @@ export class AuthService {
         }
         catch (error) {
             console.error("Refresh token error:", error.message);
-            throw new UnauthorizedError("Token invalid or expired. Please login again.");
+            throw new Error("Token invalid or expired. Please login again.");
         }
     }
     static async resendOTP(email) {

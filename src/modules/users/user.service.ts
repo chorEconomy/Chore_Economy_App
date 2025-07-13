@@ -168,7 +168,7 @@ export class AuthService {
     return tokens;
   } catch (error: any) {
     console.error("Refresh token error:", error.message);
-    throw new UnauthorizedError("Token invalid or expired. Please login again.");
+    throw new Error("Token invalid or expired. Please login again.");
   }
 }
 
