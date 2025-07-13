@@ -23,6 +23,8 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/chores", choreRouter);
 // ================== STRIPE WEBHOOK ROUTE BEFORE express.json() ==================
 import bodyParser from "body-parser";
 import stripeWebhookRouter from "./modules/payments/stripe-webhook.route.js"; // <- separate route for stripe
@@ -56,8 +58,7 @@ app.get("/api/v1/home", (req: Request, res: Response) => {
   });
 });
 
-app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/chores", choreRouter);
+
 app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/savings", savingsRouter);
 app.use("/api/v1/payments", paymentRouter); // NOTE: this is for *other* payment routes
