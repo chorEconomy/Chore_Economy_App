@@ -28,7 +28,7 @@ async function generateTokens(user: any) {
         throw new Error("Unable to generate tokens")
     }
 
-    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "15m" });
+    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "1m" });
     const refresh_token = jwt.sign({ sub: user._id}, REFRESH_SECRET, { expiresIn: "3d" });
 
     // Update the user's last login time
@@ -45,7 +45,7 @@ async function generate_reset_token(user: any) {
     if (!user || !ACCESS_SECRET) {
         throw new Error("Unable to generate token")
     }
-    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "15m" });
+    const access_token = jwt.sign({ sub: user._id }, ACCESS_SECRET, { expiresIn: "1m" });
     return access_token
 }
 
@@ -123,7 +123,7 @@ async function verifyRefreshTokenAndIssueNewAccessToken(refreshToken: string) {
     await RefreshToken.deleteOne({ userId, refreshToken });
 
     // 🔐 Generate new tokens
-    const newAccessToken = jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: "15m" });
+    const newAccessToken = jwt.sign({ sub: userId }, ACCESS_SECRET, { expiresIn: "1m" });
     const newRefreshToken = jwt.sign({ sub: userId }, REFRESH_SECRET, { expiresIn: "3d" });
 
     // 💾 Store new refresh token
