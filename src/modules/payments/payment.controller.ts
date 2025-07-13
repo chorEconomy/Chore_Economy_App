@@ -4,7 +4,7 @@ import PaymentService from "./payment.service.js";
 import asyncHandler from "express-async-handler";
 import { BadRequestError, UnauthorizedError } from "../../models/errors.js";
 import { Kid, Parent } from "../users/user.model.js";
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 dotenv.config();
 const CRON_SECRET = process.env.CRON_SECRET_KEY;
 
@@ -66,11 +66,9 @@ class PaymentController {
   static StripeWebhookHandler = asyncHandler(
     async (req: any, res: Response) => {
       const sig = req.headers["stripe-signature"] as string;
-      const rawBody = (req as any).rawBody as Buffer;
-
-      console.log("🔑 webhookSecret:", process.env.STRIPE_WEBHOOK_SECRET_LIVE);
-      console.log("📦 rawBody length:", rawBody.length);
-
+      const rawBody = req.body; 
+      console.log("Received Stripe webhook. Signature:", sig);
+      console.log("Raw body buffer length:", rawBody?.length);
       try {
         await PaymentService.handleStripeWebhook(sig, rawBody);
         res.status(200).json({ received: true });

@@ -13,7 +13,6 @@ import { Wallet } from "../wallets/wallet.model.js";
 import { Notification } from "../notifications/notification.model.js";
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 export const stripeWebhook = express.raw({ type: "application/json" });
 class PaymentService {
     static async getPaymentDetailsForKid(kidId) {
@@ -41,7 +40,12 @@ class PaymentService {
         let event;
         let session = null;
         try {
+            const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
             // 1. Verify webhook signature
+            if (!sig || !webhookSecret) {
+                console.error("Missing Stripe webhook signature or secret");
+                throw new BadRequestError("Missing Stripe webhook signature or secret");
+            }
             event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
             // 2. Only process specific payment_intent events
             if (!['payment_intent.succeeded', 'payment_intent.payment_failed'].includes(event.type)) {

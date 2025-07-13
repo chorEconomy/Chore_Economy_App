@@ -31,7 +31,7 @@ import stripeWebhookRouter from "./modules/payments/stripe-webhook.route.js"; //
 app.use(
   "/api/v1/payments/stripe-webhook",
   // <-- this ensures req.body is the raw Buffer that Stripe sent
-  bodyParser.raw({ type: "/" }),
+  bodyParser.raw({ type: "*/*" }),
   stripeWebhookRouter
 );
 

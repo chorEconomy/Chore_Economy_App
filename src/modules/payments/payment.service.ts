@@ -20,8 +20,7 @@ import { check_if_user_exists } from "../../utils/check_user_exists.utils.js";
 import ledgerModel from "../ledgers/ledger.model.js";
 dotenv.config();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string); 
 
 export const stripeWebhook = express.raw({ type: "application/json" })
 
@@ -63,7 +62,12 @@ class PaymentService {
     let session: mongoose.ClientSession | null = null;
     
     try {
-        // 1. Verify webhook signature
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
+      // 1. Verify webhook signature
+      if (!sig || !webhookSecret) {
+        console.error("Missing Stripe webhook signature or secret");
+        throw new BadRequestError("Missing Stripe webhook signature or secret");
+      }
         event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
         
         // 2. Only process specific payment_intent events

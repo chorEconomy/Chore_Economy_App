@@ -24,7 +24,7 @@ import bodyParser from "body-parser";
 import stripeWebhookRouter from "./modules/payments/stripe-webhook.route.js"; // <- separate route for stripe
 app.use("/api/v1/payments/stripe-webhook", 
 // <-- this ensures req.body is the raw Buffer that Stripe sent
-bodyParser.raw({ type: "/" }), stripeWebhookRouter);
+bodyParser.raw({ type: "*/*" }), stripeWebhookRouter);
 // ================== REST OF BODY PARSING ==================
 app.use(express.json({
     limit: "50mb",
