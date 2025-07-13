@@ -102,6 +102,10 @@ class WalletService {
           throw new ForbiddenError("Insufficient funds");
         }
         
+      if (wallet.mainBalance <= 0) {
+        throw new ForbiddenError("Insufficient funds");
+      }
+        
         wallet.mainBalance -= amount; 
 
         await wallet.save(options);
