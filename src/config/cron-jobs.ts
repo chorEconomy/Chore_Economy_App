@@ -5,7 +5,7 @@ import * as dotenv from "dotenv";
 dotenv.config()
 
 // Configuration
-const API_BASE_URL = 'https://chore-economy-app.onrender.com/api/v1';
+const API_BASE_URL = 'https://api.chor-economy.com/api/v1';
 const CRON_SECRET = process.env.CRON_SECRET_KEY || 'your-secret-key-here';
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000;
