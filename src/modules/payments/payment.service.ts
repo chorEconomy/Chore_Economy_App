@@ -186,6 +186,7 @@ class PaymentService {
       const paymentIntent: any = await stripe.paymentIntents.create({
         amount: amountInCents,
         currency: "usd",
+        payment_method_types: ["card"],
         metadata: { 
           kidId: kidId.toString(),
           parentId: parentId.toString()
